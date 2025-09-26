@@ -1,0 +1,240 @@
+<app-header-admin></app-header-admin>
+
+<div class="min-h-screen bg-gray-50 p-6">
+  <app-card-state [type]="'amchams'"></app-card-state>
+
+  <!-- Amchams Management Section -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-gray-100">
+      <h2 class="text-xl font-semibold text-gray-900">{{texts.amchamsManagement || 'Gestion des Amchams'}}</h2>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="px-6 py-4 border-b border-gray-100">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Search and Filter -->
+        <div class="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+          <!-- Search Input -->
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+              </svg>
+            </div>
+            <input 
+              type="text" 
+              class="block w-80 pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-colors" 
+              [placeholder]="texts.searchPlaceholder || 'Rechercher ici...'"
+              (input)="onSearch($event)">
+          </div>
+
+          <!-- Country Filter -->
+          <div class="flex items-center">
+            <select 
+              class="block pl-4 pr-10 py-2.5 text-sm border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white rounded-lg transition-colors min-w-[160px]">
+              <option value="all">{{texts.allCountries || 'Tous les pays'}}</option>
+              <option value="Sénégal">{{texts.senegal || 'Sénégal'}}</option>
+              <option value="États-Unis">{{texts.unitedStates || 'États-Unis'}}</option>
+              <option value="Maroc">{{texts.morocco || 'Maroc'}}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Add Amcham Button -->
+        <button 
+          type="button" 
+          class="inline-flex items-center px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-800"
+          (click)="openAddAmchamModal()">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          {{texts.addAmcham || 'Ajouter un pays'}}
+        </button>
+      </div>
+    </div>
+
+    <!-- Amchams Table -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
+              {{texts.name || 'Nom'}}
+            </th>
+            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
+              {{texts.email || 'Email'}}
+            </th>
+            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
+              {{texts.phone || 'Téléphone'}}
+            </th>
+            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
+              {{texts.date || 'Date'}}
+            </th>
+            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
+              {{texts.actions || 'Actions'}}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-100">
+          <tr *ngFor="let amcham of filteredAmchams" class="hover:bg-gray-50 transition-colors">
+            <td class="px-6 py-5">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center text-2xl bg-gray-100">
+                  <span>{{getCountryFlag(amcham.pays)}}</span>
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-semibold text-gray-900">{{amcham.nom}}</div>
+                  <div class="text-sm text-gray-500">{{amcham.pays}}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-5">
+              <div class="text-sm text-gray-900">{{amcham.email}}</div>
+            </td>
+            <td class="px-6 py-5">
+              <div class="text-sm text-gray-900">{{amcham.telephone}}</div>
+            </td>
+            <td class="px-6 py-5 text-sm text-gray-600">
+              {{amcham.date}}
+            </td>
+            <td class="px-6 py-5">
+              <div class="flex items-center space-x-3">
+                <!-- View Button -->
+                <button 
+                  class="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                  (click)="viewAmcham(amcham)"
+                  [title]="texts.view || 'Voir'">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                </button>
+                
+                <!-- Edit Button -->
+                <button 
+                  class="text-gray-400 hover:text-orange-600 transition-colors p-1"
+                  (click)="editAmcham(amcham)"
+                  [title]="texts.edit || 'Modifier'">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                </button>
+
+                <!-- Delete Button -->
+                <button 
+                  class="text-gray-400 hover:text-red-600 transition-colors p-1"
+                  (click)="deleteAmcham(amcham)"
+                  [title]="texts.delete || 'Supprimer'">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredAmchams.length === 0" class="text-center py-16">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">Aucun Amcham trouvé</h3>
+      <p class="mt-2 text-sm text-gray-500">Essayez de modifier vos critères de recherche.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Add Amcham Modal -->
+<div *ngIf="showAddAmchamModal" class="fixed inset-0 overflow-y-auto z-50">
+  <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <!-- Background overlay -->
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" (click)="closeAddAmchamModal()"></div>
+
+    <!-- Modal panel -->
+    <div class="inline-block align-bottom bg-white rounded-xl px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+      <div class="sm:flex sm:items-start">
+        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+          <h3 class="text-lg leading-6 font-semibold text-gray-900" id="modal-title">
+            {{texts.newAmcham || 'Nouveau Amcham'}}
+          </h3>
+          <form [formGroup]="amchamForm" (ngSubmit)="onSubmit()" class="mt-6 space-y-4">
+            <div>
+              <label for="nom" class="block text-sm font-medium text-gray-700 mb-2">{{texts.amchamName || 'Nom de l\'Amcham'}}</label>
+              <input type="text" id="nom" formControlName="nom" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+            </div>
+
+            <div>
+              <label for="pays" class="block text-sm font-medium text-gray-700 mb-2">{{texts.country || 'Pays'}}</label>
+              <select id="pays" formControlName="pays" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                <option value="">{{texts.select || 'Sélectionner'}} {{texts.country || 'le pays'}}</option>
+                <option value="Sénégal">{{texts.senegal || 'Sénégal'}}</option>
+                <option value="États-Unis">{{texts.unitedStates || 'États-Unis'}}</option>
+                <option value="Maroc">{{texts.morocco || 'Maroc'}}</option>
+                <option value="France">{{texts.france || 'France'}}</option>
+                <option value="Canada">{{texts.canada || 'Canada'}}</option>
+                <option value="Royaume-Uni">{{texts.unitedKingdom || 'Royaume-Uni'}}</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-700 mb-2">{{texts.amchamEmail || 'Email de l\'Amcham'}}</label>
+              <input type="email" id="email" formControlName="email" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+            </div>
+
+            <div>
+              <label for="telephone" class="block text-sm font-medium text-gray-700 mb-2">{{texts.amchamPhone || 'Téléphone de l\'Amcham'}}</label>
+              <input type="tel" id="telephone" formControlName="telephone" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+            </div>
+
+            <div>
+              <label for="adresse" class="block text-sm font-medium text-gray-700 mb-2">{{texts.amchamAddress || 'Adresse de l\'Amcham'}}</label>
+              <textarea id="adresse" formControlName="adresse" rows="3" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"></textarea>
+            </div>
+
+            <div>
+              <label for="president" class="block text-sm font-medium text-gray-700 mb-2">{{texts.president || 'Président'}}</label>
+              <input type="text" id="president" formControlName="president" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+            </div>
+
+            <div>
+              <label for="siteWeb" class="block text-sm font-medium text-gray-700 mb-2">{{texts.website || 'Site web'}}</label>
+              <input type="url" id="siteWeb" formControlName="siteWeb" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+            </div>
+
+            <div>
+              <label for="description" class="block text-sm font-medium text-gray-700 mb-2">{{texts.description || 'Description'}}</label>
+              <textarea id="description" formControlName="description" rows="3" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"></textarea>
+            </div>
+
+            <div>
+              <label for="logo" class="block text-sm font-medium text-gray-700 mb-2">{{texts.logo || 'Logo'}}</label>
+              <div class="mt-1 flex items-center">
+                <input type="file" id="logo" (change)="onFileSelected($event)" class="sr-only" accept="image/*">
+                <label for="logo" class="inline-flex items-center px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
+                  <svg class="w-5 h-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                  </svg>
+                  {{texts.chooseFile || 'Choisir un fichier'}}
+                </label>
+                <span class="ml-3 text-sm text-gray-500" id="file-name">{{texts.noFileChosen || 'Aucun fichier choisi'}}</span>
+              </div>
+            </div>
+
+            <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3">
+              <button type="button" (click)="closeAddAmchamModal()" class="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center items-center px-6 py-2.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                {{texts.cancel || 'Annuler'}}
+              </button>
+              <button type="submit" [disabled]="!amchamForm.valid" class="w-full sm:w-auto inline-flex justify-center items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-slate-800 hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                {{texts.save || 'Enregistrer'}}
+              </button>  
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

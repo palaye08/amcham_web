@@ -1,0 +1,129 @@
+<!-- Barre de langue -->
+ <!-- <router-outlet></router-outlet> -->
+<div class="bg-[#132742] h-10">
+    <div class="w-[86%] mx-auto flex justify-between items-center h-full">
+      <div class="text-white text-sm">
+        Plateforme AmCham - Réseau des Chambres de Commerce Américaines
+      </div>
+      <div class="relative language-selector">
+        <button 
+          (click)="toggleLanguagePopup()" 
+          class="text-white text-sm flex items-center space-x-2 hover:opacity-80 transition-opacity">
+          <img [src]="currentLanguage.flag" alt="" class="w-4 h-4 rounded-sm">
+          <span>{{ currentLanguage.code }}</span>
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        
+            <!-- Popup de sélection de langue -->
+            <div 
+            *ngIf="showLanguagePopup" 
+            class="absolute top-full right-0 mt-1 w-64 bg-gradient-to-b from-[#4a5a7a] to-[#2a3a5a] rounded-lg shadow-lg overflow-hidden z-50">
+            <div class="p-4">
+                <div class="flex justify-between items-center mb-4">
+                <h3 class="text-white font-medium">Changer la langue</h3>
+                <button 
+                    (click)="toggleLanguagePopup()" 
+                    class="text-gray-300 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+                </div>
+                
+                <!-- Option Français -->
+                <div 
+                (click)="selectLanguage('fr')" 
+                class="flex items-center justify-between p-3 rounded-lg mb-2 cursor-pointer hover:bg-black/20 transition-colors"
+                [class.border-2]="currentLanguage.code === 'FR'"
+                [class.border-red-500]="currentLanguage.code === 'FR'">
+                <div class="flex items-center space-x-3">
+                    <img src="https://flagcdn.com/w20/fr.png" alt="Français" class="w-5 h-5 rounded-sm">
+                    <span class="text-white">Français</span>
+                </div>
+                <div 
+                    *ngIf="currentLanguage.code === 'FR'" 
+                    class="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                </div>
+                
+                <!-- Option Anglais -->
+                <div 
+                (click)="selectLanguage('en')" 
+                class="flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-black/20 transition-colors"
+                [class.border-2]="currentLanguage.code === 'EN'"
+                [class.border-red-500]="currentLanguage.code === 'EN'">
+                <div class="flex items-center space-x-3">
+                    <img src="https://flagcdn.com/w20/gb.png" alt="English" class="w-5 h-5 rounded-sm">
+                    <span class="text-white">Anglais</span>
+                </div>
+                <div 
+                    *ngIf="currentLanguage.code === 'EN'" 
+                    class="w-5 h-5 border-2 border-gray-400 rounded-full">
+                </div>
+                </div>
+            </div>
+            </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Header existant -->
+  <header class="bg-white shadow-sm border-b">
+    <div class="w-[90%] mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo -->
+        <div class="flex-shrink-0 cursor-pointer" (click)="navigateToHome()">
+          <div class="flex items-center space-x-2">
+            <div class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+              <span class="text-white font-bold text-lg">A</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-red-600 font-bold text-sm">AMCHAM</span>
+              <span class="text-gray-600 text-xs">RÉSEAU AFRIQUE</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Navigation Menu -->
+        <nav class="hidden md:flex space-x-8">
+          <a (click)="navigateToHome()" class="text-red-600 hover:text-red-700 px-3 py-2 text-sm font-medium cursor-pointer border-b-2 border-red-600">
+            Accueil
+          </a>
+          <a (click)="navigateToAnnonces()" class="text-gray-700 hover:text-red-600 px-3 py-2 text-sm font-medium cursor-pointer">
+            Annonces
+          </a>
+          <a (click)="navigateToAnnuaires()" class="text-gray-700 hover:text-red-600 px-3 py-2 text-sm font-medium cursor-pointer">
+            Annuaires
+          </a>
+        </nav>
+        
+        <!-- Espace Membre Button -->
+        <div class="flex items-center">
+          <button (click)="navigateToLogin()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-[30px] text-sm font-medium flex items-center space-x-2 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            <span>Espace membre</span>
+          </button>
+        </div>
+        
+        <!-- Mobile menu button -->
+        <div class="md:hidden">
+          <button type="button" class="text-gray-700 hover:text-red-600 focus:outline-none focus:text-red-600">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+
+  

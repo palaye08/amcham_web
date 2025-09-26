@@ -1,0 +1,156 @@
+<!-- Header -->
+<router-outlet></router-outlet>
+<app-header-membre></app-header-membre>
+
+  <!-- Container principal -->
+  <div class="min-h-screen bg-gray-50 ">
+
+  
+    <!-- Contenu principal -->
+    <div class="w-[92%] mx-auto px-6 py-8">
+      <div class="flex gap-8">
+        <!-- Sidebar gauche -->
+        <div class="w-80 space-y-6">
+          <!-- Info company card -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mr-4">
+                <img class="h-12 w-12 rounded-[50%]" src="../assets/logoW.png" alt="">
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">{{ companyData.name }}</h3>
+                <p class="text-sm text-gray-500">{{ companyData.sector }}</p>
+              </div>
+            </div>
+            
+            <div class="space-y-3 text-sm text-gray-600">
+              <div class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                </svg>
+                {{ companyData.address }}
+              </div>
+              <div class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                </svg>
+                {{ companyData.phone }}
+              </div>
+              <div class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"></path>
+                </svg>
+                {{ companyData.website }}
+              </div>
+            </div>
+  
+            <!-- Profile visibility alert -->
+            <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+              <svg class="w-5 h-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              <div>
+                <p class="text-sm text-red-800 font-medium">{{ texts.profilePreview }}</p>
+                <p class="text-xs text-red-600 mt-1">{{ texts.profileWarning }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Contenu principal - Horaires d'ouverture -->
+        <div class="flex-1">
+          <form [formGroup]="horaireForm" class="space-y-8">
+            <!-- Section Horaires d'ouverture -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-semibold text-gray-900">{{ texts.title }}</h2>
+              </div>
+
+              <!-- En-tête du tableau -->
+              <div class="grid grid-cols-12 gap-4 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200 font-medium text-gray-900 mb-4">
+                <div class="col-span-3">{{ texts.day }}</div>
+                <div class="col-span-3 text-center">{{ texts.availability }}</div>
+                <div class="col-span-3">{{ texts.opening }}</div>
+                <div class="col-span-3">{{ texts.closing }}</div>
+              </div>
+
+              <!-- Lignes des jours -->
+              <div class="space-y-3">
+                <div *ngFor="let jour of joursSemaine" class="grid grid-cols-12 gap-4 px-4 py-3 border-b border-gray-200 last:border-b-0">
+                  <!-- Nom du jour -->
+                  <div class="col-span-3 flex items-center font-medium text-gray-900">
+                    {{ jour.nom }}
+                  </div>
+
+                  <!-- Disponibilité -->
+                  <div class="col-span-3 flex items-center justify-center">
+                    <button
+                      type="button"
+                      (click)="toggleJour(jour.value)"
+                      [class]="horaireForm.get(jour.value + '_ouvert')?.value ? 
+                        'bg-green-100 text-green-800 border-green-200' : 
+                        'bg-red-100 text-red-800 border-red-200'"
+                      class="px-4 py-2 border rounded-lg text-sm font-medium transition-colors duration-200 w-full max-w-[120px]"
+                    >
+                      {{ horaireForm.get(jour.value + '_ouvert')?.value ? texts.open : texts.closed }}
+                    </button>
+                  </div>
+
+                  <!-- Heure d'ouverture -->
+                  <div class="col-span-3">
+                    <input
+                      type="time"
+                      [formControlName]="jour.value + '_ouverture'"
+                      [disabled]="!horaireForm.get(jour.value + '_ouvert')?.value"
+                      [class]="isFieldInvalid(jour.value + '_ouverture') ? 
+                        'border-red-300 focus:border-red-500 focus:ring-red-500' : 
+                        'border-gray-300 focus:border-blue-500 focus:ring-blue-500'"
+                      class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 disabled:bg-gray-100 disabled:text-gray-500"
+                    />
+                    <div *ngIf="isFieldInvalid(jour.value + '_ouverture')" class="text-red-500 text-xs mt-1">
+                      {{ getFieldError(jour.value + '_ouverture') }}
+                    </div>
+                  </div>
+
+                  <!-- Heure de fermeture -->
+                  <div class="col-span-3">
+                    <input
+                      type="time"
+                      [formControlName]="jour.value + '_fermeture'"
+                      [disabled]="!horaireForm.get(jour.value + '_ouvert')?.value"
+                      [class]="isFieldInvalid(jour.value + '_fermeture') ? 
+                        'border-red-300 focus:border-red-500 focus:ring-red-500' : 
+                        'border-gray-300 focus:border-blue-500 focus:ring-blue-500'"
+                      class="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 disabled:bg-gray-100 disabled:text-gray-500"
+                    />
+                    <div *ngIf="isFieldInvalid(jour.value + '_fermeture')" class="text-red-500 text-xs mt-1">
+                      {{ getFieldError(jour.value + '_fermeture') }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Boutons d'action en bas -->
+              <div class="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+                <button 
+                  type="button"
+                  (click)="resetForm()"
+                  class="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                >
+                  {{ texts.cancel }}
+                </button>
+                <button 
+                  type="submit"
+                  (click)="onSubmit()"
+                  class="px-6 py-2 text-white font-medium rounded-lg text-sm transition-colors duration-200"
+                  style="background-color: #1D365D"
+                >
+                  {{ texts.saveButton }}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>

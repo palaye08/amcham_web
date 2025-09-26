@@ -1,0 +1,320 @@
+<!-- Header -->
+<router-outlet></router-outlet>
+<app-header-membre></app-header-membre>
+
+<!-- Container principal -->
+<div class="min-h-screen bg-gray-50">
+  <!-- Contenu principal -->
+  <div class="w-[92%] mx-auto px-6 py-8">
+    <div class="flex gap-8">
+      <!-- Sidebar gauche -->
+      <div class="w-80 space-y-6">
+        <!-- Info company card -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mr-4">
+              <img class="h-12 w-12 rounded-[50%]" src="../assets/logoW.png" alt="">
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-900">{{ companyData.name }}</h3>
+              <p class="text-sm text-gray-500">{{ companyData.sector }}</p>
+            </div>
+          </div>
+          
+          <div class="space-y-3 text-sm text-gray-600">
+            <div class="flex items-center">
+              <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+              </svg>
+              {{ companyData.address }}
+            </div>
+            <div class="flex items-center">
+              <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+              </svg>
+              {{ companyData.phone }}
+            </div>
+            <div class="flex items-center">
+              <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"></path>
+              </svg>
+              {{ companyData.website }}
+            </div>
+          </div>
+
+          <!-- Profile visibility alert -->
+          <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+            <svg class="w-5 h-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            <div>
+              <p class="text-sm text-red-800 font-medium">{{ texts.preview }}</p>
+            </div>
+            <button class="ml-auto text-red-400 hover:text-red-600">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenu principal -->
+      <div class="flex-1">
+        <form [formGroup]="companyForm" (ngSubmit)="onSubmit()" class="space-y-8">
+          <!-- Logo de l'entreprise -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">{{ texts.companyLogo }}</h2>
+            
+            <div class="flex items-start space-x-6">
+              <!-- Logo display -->
+              <div class="flex-shrink-0">
+                <div class="w-24 h-24 bg-blue-900 rounded-full flex items-center justify-center">
+                  <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo" class="w-full h-full object-cover rounded-full">
+                  <img *ngIf="!logoPreview" class="h-24 w-24 rounded-[50%]" src="../assets/logoW.png" alt="Logo">
+                </div>
+              </div>
+              
+              <!-- Upload controls -->
+              <div class="flex-1">
+                <div class="flex space-x-4">
+                  <label class="cursor-pointer inline-flex items-center px-4 py-2 border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    {{ texts.changeLogo }}
+                    <input
+                      type="file"
+                      id="logoInput"
+                      (change)="onLogoSelected($event)"
+                      accept="image/*"
+                      class="hidden"
+                    >
+                  </label>
+                  
+                  <button
+                    type="button"
+                    (click)="onLogoDelete()"
+                    class="inline-flex items-center px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    {{ texts.delete }}
+                  </button>
+                </div>
+                <p class="text-sm text-gray-500 mt-2">
+                  {{ texts.fileFormat }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informations de l'entreprise -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">{{ texts.companyInfo }}</h2>
+            
+            <div class="grid grid-cols-2 gap-6">
+              <!-- Nom de l'entreprise -->
+              <div>
+                <label for="companyName" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{ texts.companyName }}
+                </label>
+                <input
+                  type="text"
+                  id="companyName"
+                  formControlName="companyName"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                <div *ngIf="isFieldInvalid('companyName')" class="text-red-500 text-xs mt-1">
+                  {{ getFieldError('companyName') }}
+                </div>
+              </div>
+              
+              <!-- Secteur d'activité -->
+              <div>
+                <label for="sector" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{ texts.sector }}
+                </label>
+                <select
+                  id="sector"
+                  formControlName="sector"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  <option *ngFor="let sector of sectors" [value]="sector">{{ sector }}</option>
+                </select>
+                <div *ngIf="isFieldInvalid('sector')" class="text-red-500 text-xs mt-1">
+                  {{ getFieldError('sector') }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Description -->
+            <div class="mt-6">
+              <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                {{ texts.description }}
+              </label>
+              <textarea
+                id="description"
+                formControlName="description"
+                rows="4"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+              ></textarea>
+              <p class="text-sm text-gray-500 mt-2">
+                {{ texts.descriptionHint }}
+              </p>
+              <div *ngIf="isFieldInvalid('description')" class="text-red-500 text-xs mt-1">
+                {{ getFieldError('description') }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Localisation -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">{{ texts.location }}</h2>
+            
+            <div class="grid grid-cols-2 gap-6">
+              <!-- Pays -->
+              <div>
+                <label for="country" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{ texts.country }}
+                </label>
+                <select
+                  id="country"
+                  formControlName="country"
+                  (change)="onCountryChange($event)"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  <option *ngFor="let country of countries" [value]="country.name">
+                    {{ country.flag }} {{ country.name }}
+                  </option>
+                </select>
+                <div *ngIf="isFieldInvalid('country')" class="text-red-500 text-xs mt-1">
+                  {{ getFieldError('country') }}
+                </div>
+              </div>
+              
+              <!-- Ville -->
+              <div>
+                <label for="city" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{ texts.city }}
+                </label>
+                <input
+                  type="text"
+                  id="city"
+                  formControlName="city"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                <div *ngIf="isFieldInvalid('city')" class="text-red-500 text-xs mt-1">
+                  {{ getFieldError('city') }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Adresse complète -->
+            <div class="mt-6">
+              <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
+                {{ texts.address }}
+              </label>
+              <div class="relative">
+                <input
+                  type="text"
+                  id="address"
+                  formControlName="address"
+                  class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <div *ngIf="isFieldInvalid('address')" class="text-red-500 text-xs mt-1">
+                {{ getFieldError('address') }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">{{ texts.contact }}</h2>
+            
+            <div class="grid grid-cols-2 gap-6">
+              <!-- Email -->
+              <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{ texts.email }}
+                </label>
+                <div class="relative">
+                  <input
+                    type="email"
+                    id="email"
+                    formControlName="email"
+                    class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                  <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                  </svg>
+                </div>
+                <div *ngIf="isFieldInvalid('email')" class="text-red-500 text-xs mt-1">
+                  {{ getFieldError('email') }}
+                </div>
+              </div>
+              
+              <!-- Téléphone -->
+              <div>
+                <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{ texts.phone }}
+                </label>
+                <div class="relative">
+                  <input
+                    type="tel"
+                    id="phone"
+                    formControlName="phone"
+                    class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                  <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                  </svg>
+                </div>
+                <div *ngIf="isFieldInvalid('phone')" class="text-red-500 text-xs mt-1">
+                  {{ getFieldError('phone') }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Site web -->
+            <div class="mt-6">
+              <label for="website" class="block text-sm font-medium text-gray-700 mb-2">
+                {{ texts.website }}
+              </label>
+              <div class="relative">
+                <input
+                  type="url"
+                  id="website"
+                  formControlName="website"
+                  class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"></path>
+                </svg>
+              </div>
+              <div *ngIf="isFieldInvalid('website')" class="text-red-500 text-xs mt-1">
+                {{ getFieldError('website') }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Bouton de sauvegarde -->
+          <div class="flex justify-end">
+            <button
+              type="submit"
+              [disabled]="companyForm!.invalid"
+              class="px-6 py-3 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style="background-color: #1D365D"
+              [class.hover:opacity-90]="!companyForm!.invalid"
+            >
+              {{ texts.save }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
