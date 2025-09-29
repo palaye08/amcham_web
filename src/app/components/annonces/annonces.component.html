@@ -1,14 +1,29 @@
 <app-header-admin></app-header-admin>
 
 <div class="min-h-screen bg-gray-50 p-6">
-    <app-card-state [type]="'announcements'"></app-card-state>
+  <!-- Card State Component -->
+  <app-card-state [type]="'announcements'"></app-card-state>
 
+  <!-- Error Message -->
+  <div *ngIf="error" class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg relative">
+    <div class="flex justify-between items-center">
+      <div>
+        <strong class="font-medium">{{texts.errorOccurred}}</strong>
+        <span class="block sm:inline">{{error}}</span>
+      </div>
+      <button (click)="clearError()" class="text-red-500 hover:text-red-700">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
 
   <!-- Announcements Management Section -->
   <div class="bg-white rounded-xl shadow-sm border border-gray-100">
     <!-- Header -->
     <div class="px-6 py-5 border-b border-gray-100">
-      <h2 class="text-xl font-semibold text-gray-900">{{texts.announcementsManagement || 'Gestion des annonces'}}</h2>
+      <h2 class="text-xl font-semibold text-gray-900">{{texts.announcementsManagement}}</h2>
     </div>
 
     <!-- Filters and Search -->
@@ -26,30 +41,20 @@
             <input 
               type="text" 
               class="block w-80 pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-colors" 
-              [placeholder]="texts.searchPlaceholder || 'Rechercher ici...'"
+              [placeholder]="texts.searchPlaceholder"
+              [value]="searchTerm"
               (input)="onSearch($event)">
           </div>
 
           <!-- Category Filter -->
           <div class="flex items-center">
             <select 
-              class="block pl-4 pr-10 py-2.5 text-sm border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white rounded-lg transition-colors min-w-[160px]"
+              class="block pl-4 pr-10 py-2.5 text-sm border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white rounded-lg transition-colors min-w-[180px]"
               (change)="onCategoryFilter($event)">
-              <option value="all">{{texts.allCategories || 'Toutes les catégories'}}</option>
-              <option value="Événement">{{texts.event || 'Événement'}}</option>
-              <option value="Opportunité">{{texts.opportunity || 'Opportunité'}}</option>
-              <option value="Actualité">{{texts.news || 'Actualité'}}</option>
-            </select>
-          </div>
-
-          <!-- Status Filter -->
-          <div class="flex items-center">
-            <select 
-              class="block pl-4 pr-10 py-2.5 text-sm border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white rounded-lg transition-colors min-w-[160px]"
-              (change)="onStatusFilter($event)">
-              <option value="all">{{texts.allStatuses || 'Tous les statuts'}}</option>
-              <option value="Public">{{texts.public || 'Public'}}</option>
-              <option value="Brouillon">{{texts.draft || 'Brouillon'}}</option>
+              <option value="all">{{texts.allCategories}}</option>
+              <option *ngFor="let category of categories" [value]="category.id">
+                {{getCategoryDisplayName(category)}}
+              </option>
             </select>
           </div>
         </div>
@@ -57,35 +62,48 @@
         <!-- Add Announcement Button -->
         <button 
           type="button" 
-          class="inline-flex items-center px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-800"
+          class="inline-flex items-center px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
+          style="background-color: #1E293B;"
+          [disabled]="loading"
           (click)="openAddAnnouncementModal()">
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
           </svg>
-          {{texts.addAnnouncement || 'Ajouter une annonce'}}
+          {{texts.addAnnouncement}}
         </button>
       </div>
     </div>
 
+    <!-- Loading Indicator -->
+    <div *ngIf="loading" class="px-6 py-8 text-center">
+      <div class="inline-flex items-center">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        {{texts.loading}}
+      </div>
+    </div>
+
     <!-- Announcements Table -->
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto" *ngIf="!loading">
       <table class="min-w-full">
         <thead class="bg-gray-50">
           <tr>
             <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              {{texts.announcement || 'Annonce'}}
+              {{texts.announcement}}
             </th>
             <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              {{texts.category || 'Catégorie'}}
+              {{texts.category}}
             </th>
             <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              {{texts.status || 'Statut'}}
+              {{texts.date}}
             </th>
             <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              {{texts.date || 'Date'}}
+              {{texts.status}}
             </th>
             <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-blue-600 uppercase tracking-wider">
-              {{texts.actions || 'Actions'}}
+              {{texts.actions}}
             </th>
           </tr>
         </thead>
@@ -93,52 +111,35 @@
           <tr *ngFor="let annonce of filteredAnnonces" class="hover:bg-gray-50 transition-colors">
             <td class="px-6 py-5">
               <div class="flex items-center">
-                <div class="flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center font-semibold text-white"
-                     [ngClass]="{
-                       'bg-blue-500': annonce.categorie === 'Événement' || annonce.categorie === 'Event',
-                       'bg-emerald-500': annonce.categorie === 'Opportunité' || annonce.categorie === 'Opportunity',
-                       'bg-cyan-500': annonce.categorie === 'Actualité' || annonce.categorie === 'News'
-                     }">
-                  <span class="text-sm">{{annonce.titre.charAt(0) || 'A'}}</span>
+                <div class="flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden">
+                  <img [src]="getAnnonceImage(annonce)" [alt]="annonce.title" class="h-full w-full object-cover">
                 </div>
                 <div class="ml-4">
-                  <div class="text-sm font-semibold text-gray-900">{{annonce.titre}}</div>
-                  <div class="text-sm text-gray-500">{{annonce.description}}</div>
+                  <div class="text-sm font-semibold text-gray-900">{{annonce.title}}</div>
+                  <div class="text-xs text-gray-500 mt-1">{{annonce.description}}</div>
                 </div>
               </div>
             </td>
             <td class="px-6 py-5">
-              <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full" 
-                    [ngClass]="{
-                      'bg-blue-100 text-blue-700': annonce.categorie === 'Événement' || annonce.categorie === 'Event',
-                      'bg-emerald-100 text-emerald-700': annonce.categorie === 'Opportunité' || annonce.categorie === 'Opportunity',
-                      'bg-cyan-100 text-cyan-700': annonce.categorie === 'Actualité' || annonce.categorie === 'News'
-                    }">
-                {{annonce.categorie}}
-              </span>
-            </td>
-            <td class="px-6 py-5">
-              <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full" 
-                    [ngClass]="{
-                      'bg-emerald-100 text-emerald-700': annonce.statut === 'Public' ,
-                      'bg-amber-100 text-amber-700': annonce.statut === 'Brouillon' || annonce.statut === 'Draft'
-                    }">
-                <span class="w-1.5 h-1.5 rounded-full mr-2" 
-                      [ngClass]="{
-                        'bg-emerald-500': annonce.statut === 'Public',
-                        'bg-amber-500': annonce.statut === 'Brouillon' || annonce.statut === 'Draft'
-                      }"></span>
-                {{annonce.statut}}
+              <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                {{getCategoryDisplayName(annonce.category)}}
               </span>
             </td>
             <td class="px-6 py-5 text-sm text-gray-600">
-              {{annonce.date}}
+              {{annonce.startDate}}
+            </td>
+            <td class="px-6 py-5">
+              <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></span>
+                Publié
+              </span>
             </td>
             <td class="px-6 py-5">
               <div class="flex items-center space-x-3">
                 <!-- View Button -->
                 <button 
                   class="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                  [disabled]="loading"
                   (click)="viewAnnouncement(annonce)"
                   title="Voir">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +150,8 @@
                 
                 <!-- Edit Button -->
                 <button 
-                  class="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                  class="text-gray-400 hover:text-orange-600 transition-colors p-1"
+                  [disabled]="loading"
                   (click)="editAnnouncement(annonce)"
                   title="Modifier">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,18 +159,15 @@
                   </svg>
                 </button>
 
-                <!-- Status Toggle -->
-                <button class="relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        [ngClass]="{
-                          'bg-blue-600': annonce.statut === 'Public',
-                          'bg-gray-200': annonce.statut === 'Brouillon' || annonce.statut === 'Draft'
-                        }"
-                        (click)="toggleAnnouncementStatus(annonce)">
-                  <span class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200"
-                        [ngClass]="{
-                          'translate-x-5': annonce.statut === 'Public' ,
-                          'translate-x-0': annonce.statut === 'Brouillon' || annonce.statut === 'Draft'
-                        }"></span>
+                <!-- Delete Button -->
+                <button 
+                  class="text-gray-400 hover:text-red-600 transition-colors p-1"
+                  [disabled]="loading"
+                  (click)="deleteAnnouncement(annonce)"
+                  title="Supprimer">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
                 </button>
               </div>
             </td>
@@ -178,75 +177,228 @@
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="filteredAnnonces?.length === 0" class="text-center py-16">
+    <div *ngIf="!loading && filteredAnnonces.length === 0" class="text-center py-16">
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       </svg>
-      <h3 class="mt-4 text-lg font-medium text-gray-900">Aucune annonce trouvée</h3>
-      <p class="mt-2 text-sm text-gray-500">Essayez de modifier vos critères de recherche ou de filtre.</p>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">{{texts.noAnnouncementFound}}</h3>
+      <p class="mt-2 text-sm text-gray-500">{{texts.tryDifferentSearch}}</p>
     </div>
   </div>
 </div>
 
-<!-- Add Announcement Modal -->
-<div *ngIf="showAddAnnouncementModal" class="fixed inset-0 overflow-y-auto z-50">
+<!-- Add/Edit Announcement Modal -->
+<div *ngIf="showAddAnnouncementModal || showEditAnnouncementModal" class="fixed inset-0 overflow-y-auto z-50">
   <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
     <!-- Background overlay -->
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" (click)="closeAddAnnouncementModal()"></div>
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" (click)="closeModals()"></div>
 
     <!-- Modal panel -->
-    <div class="inline-block align-bottom bg-white rounded-xl px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+    <div class="inline-block align-bottom bg-white rounded-2xl px-8 pt-8 pb-6 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+      <div class="absolute top-6 right-6">
+        <button (click)="closeModals()" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
       <div class="sm:flex sm:items-start">
-        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-          <h3 class="text-lg leading-6 font-semibold text-gray-900" id="modal-title">
-            {{texts.newAnnouncement || 'Nouvelle annonce'}}
+        <div class="w-full">
+          <h3 class="text-2xl font-semibold text-gray-900 mb-8" id="modal-title">
+            {{showEditAnnouncementModal ? texts.editAnnouncement : texts.newAnnouncement}}
           </h3>
-          <form [formGroup]="announcementForm" (ngSubmit)="onSubmit()" class="mt-6 space-y-4">
+          
+          <form [formGroup]="announcementForm" (ngSubmit)="onSubmit()" class="space-y-5">
+            <!-- Titre -->
             <div>
-              <label for="titre" class="block text-sm font-medium text-gray-700 mb-2">{{texts.title || 'Titre'}}</label>
-              <input type="text" id="titre" formControlName="titre" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+              <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+                {{texts.title}} <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="title" 
+                formControlName="title" 
+                placeholder="Ex: Opportunités d'investissement"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                [class.border-red-300]="announcementForm.get('title')?.invalid && announcementForm.get('title')?.touched">
+              <div *ngIf="announcementForm.get('title')?.invalid && announcementForm.get('title')?.touched" class="mt-1 text-sm text-red-600">
+                Le titre est requis
+              </div>
             </div>
 
+            <!-- Description -->
             <div>
-              <label for="description" class="block text-sm font-medium text-gray-700 mb-2">{{texts.description || 'Description'}}</label>
-              <textarea id="description" formControlName="description" rows="3" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"></textarea>
+              <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                {{texts.description}}
+              </label>
+              <textarea 
+                id="description" 
+                formControlName="description" 
+                rows="3" 
+                placeholder="Écrivez une description"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                [class.border-red-300]="announcementForm.get('description')?.invalid && announcementForm.get('description')?.touched"></textarea>
             </div>
 
+            <!-- Catégorie -->
             <div>
-              <label for="categorie" class="block text-sm font-medium text-gray-700 mb-2">{{texts.category || 'Catégorie'}}</label>
-              <select id="categorie" formControlName="categorie" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                <option value="">{{texts.select || 'Sélectionner'}} {{texts.category || 'la catégorie'}}</option>
-                <option value="Événement">{{texts.event || 'Événement'}}</option>
-                <option value="Opportunité">{{texts.opportunity || 'Opportunité'}}</option>
-                <option value="Actualité">{{texts.news || 'Actualité'}}</option>
+              <label for="categoryId" class="block text-sm font-medium text-gray-700 mb-2">
+                {{texts.category}}
+              </label>
+              <select 
+                id="categoryId" 
+                formControlName="categoryId" 
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                [class.border-red-300]="announcementForm.get('categoryId')?.invalid && announcementForm.get('categoryId')?.touched">
+                <option [value]="null">{{texts.selectCategory}}</option>
+                <option *ngFor="let category of categories" [value]="category.id">
+                  {{getCategoryDisplayName(category)}}
+                </option>
               </select>
             </div>
 
+            <!-- Image Upload - SECTION CORRIGÉE -->
             <div>
-              <label for="datePublication" class="block text-sm font-medium text-gray-700 mb-2">{{texts.publicationDate || 'Date de publication'}}</label>
-              <input type="date" id="datePublication" formControlName="datePublication" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                {{texts.image}}
+              </label>
+              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <!-- Input file caché avec référence directe -->
+                <input 
+                  #fileInput
+                  type="file" 
+                  id="imageFile" 
+                  accept="image/*"
+                  (change)="onFileSelected($event)"
+                  class="hidden">
+                
+                <!-- Zone de drop et bouton -->
+                <div *ngIf="!imagePreview" 
+                     class="cursor-pointer" 
+                     (click)="fileInput.click()">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                  </svg>
+                  <button 
+                    type="button"
+                    class="mt-3 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+                    style="background-color: #FEE2E2; color: #AA1520;">
+                    {{texts.chooseFile}}
+                  </button>
+                  <p class="mt-2 text-xs text-gray-500">{{texts.noFileChosen}}</p>
+                  <p class="mt-1 text-xs text-gray-400">PNG, JPG, JPEG jusqu'à 5MB</p>
+                </div>
+
+                <!-- Preview de l'image -->
+                <div *ngIf="imagePreview" class="relative">
+                  <img [src]="imagePreview" alt="Preview" class="mx-auto max-h-48 rounded-lg object-cover">
+                  <div class="mt-2 flex justify-center space-x-2">
+                    <button 
+                      type="button"
+                      (click)="fileInput.click()"
+                      class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                      Changer
+                    </button>
+                    <button 
+                      type="button"
+                      (click)="imagePreview = null; selectedImageFile = null"
+                      class="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Message d'info -->
+              <div *ngIf="selectedImageFile" class="mt-2 text-xs text-green-600">
+                Fichier sélectionné: {{selectedImageFile.name}} ({{(selectedImageFile.size / 1024 / 1024).toFixed(2)}} MB)
+              </div>
             </div>
 
-            <div>
-              <label for="statut" class="block text-sm font-medium text-gray-700 mb-2">{{texts.status || 'Statut'}}</label>
-              <select id="statut" formControlName="statut" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                <option value="Public">{{texts.public || 'Public'}}</option>
-                <option value="Brouillon">{{texts.draft || 'Brouillon'}}</option>
-              </select>
+            <!-- Date et Heure -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="startDate" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{texts.startDate}} <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="date" 
+                  id="startDate" 
+                  formControlName="startDate" 
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+              </div>
+
+              <div>
+                <label for="endDate" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{texts.endDate}} <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="date" 
+                  id="endDate" 
+                  formControlName="endDate" 
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+              </div>
             </div>
 
-            <div>
-              <label for="contenu" class="block text-sm font-medium text-gray-700 mb-2">{{texts.content || 'Contenu'}}</label>
-              <textarea id="contenu" formControlName="contenu" rows="6" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"></textarea>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="startTime" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{texts.startTime}} <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="time" 
+                  id="startTime" 
+                  formControlName="startTime" 
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+              </div>
+
+              <div>
+                <label for="endTime" class="block text-sm font-medium text-gray-700 mb-2">
+                  {{texts.endTime}} <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="time" 
+                  id="endTime" 
+                  formControlName="endTime" 
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+              </div>
             </div>
 
-            <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3">
-              <button type="button" (click)="closeAddAnnouncementModal()" class="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center items-center px-6 py-2.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                {{texts.cancel || 'Annuler'}}
+            <!-- Adresse -->
+            <div>
+              <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
+                {{texts.address}} <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="address" 
+                formControlName="address" 
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+            </div>
+
+            <!-- Buttons -->
+            <div class="mt-8 flex justify-between pt-4">
+              <button 
+                type="submit" 
+                [disabled]="!announcementForm.valid || loading"
+                class="px-8 py-3 text-sm font-medium rounded-lg text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style="background-color: #AA1520;">
+                <svg *ngIf="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {{texts.save}}
               </button>
-              <button type="submit" [disabled]="!announcementForm.valid" class="w-full sm:w-auto inline-flex justify-center items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-slate-800 hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                {{texts.save || 'Enregistrer'}}
-              </button>  
+
+              <button 
+                type="button" 
+                (click)="closeModals()" 
+                [disabled]="loading"
+                class="px-8 py-3 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                style="background-color: #F8F9FA; color: #6B7280;">
+                {{texts.cancel}}
+              </button>
             </div>
           </form>
         </div>

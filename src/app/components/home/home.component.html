@@ -55,13 +55,16 @@
   
 <!-- Search Section -->
 <section class="relative bottom-24" style="background: linear-gradient(to bottom, 50%, #F5F6FA 50%);">
-  <div class="bg-white rounded-2xl p-10 shadow-2xl border border-gray-100 w-[87%] mx-auto">
+  <div class="bg-white rounded-2xl p-10 border w-[87%] mx-auto">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <!-- Recherche par nom -->
       <div class="relative">
         <label class="block text-sm font-semibold text-gray-700 mb-3">{{ searchTexts.memberName }}</label>
         <input 
           type="text" 
+          [(ngModel)]="searchKeyword"
           [placeholder]="searchTexts.memberPlaceholder" 
+          (keyup.enter)="rechercher()"
           class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-lg transition-all duration-300 hover:border-gray-300">
         <div class="absolute inset-y-0 right-0 flex items-center pr-3 mt-8">
           <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,102 +73,126 @@
         </div>
       </div>
       
+      <!-- Sélection du pays -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-3">{{ searchTexts.country }}</label>
-        <select class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-lg transition-all duration-300 hover:border-gray-300">
-          <option>{{ searchTexts.allCountries }}</option>
-          <option>France</option>
-          <option>États-Unis</option>
-          <option>Canada</option>
-          <option>Sénégal</option>
+        <select 
+          [(ngModel)]="selectedCountryId"
+          class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-lg transition-all duration-300 hover:border-gray-300">
+          <option [value]="undefined">{{ searchTexts.allCountries }}</option>
+          @for (country of countries; track country.id) {
+            <option [value]="country.id">{{ country.name }}</option>
+          }
         </select>
       </div>
       
+      <!-- Sélection du secteur -->
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-3">{{ searchTexts.sector }}</label>
-        <select class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-lg transition-all duration-300 hover:border-gray-300">
-          <option>{{ searchTexts.allSectors }}</option>
-          <option>Technologie</option>
-          <option>Finance</option>
-          <option>Santé</option>
-          <option>Commerce</option>
+        <select 
+          [(ngModel)]="selectedSectorId"
+          class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 text-lg transition-all duration-300 hover:border-gray-300">
+          <option [value]="undefined">{{ searchTexts.allSectors }}</option>
+          @for (sector of sectors; track sector.id) {
+            <option [value]="sector.id">{{ getSectorName(sector) }}</option>
+          }
         </select>
       </div>
       
+      <!-- Bouton de recherche -->
       <div class="flex items-end">
         <button 
           (click)="rechercher()" 
-          class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 text-lg shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <span>{{ searchTexts.search }}</span>
+          [disabled]="isSearching"
+          class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 text-lg shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:hover:shadow-lg flex items-center justify-center space-x-2 disabled:cursor-not-allowed">
+          @if (isSearching) {
+            <svg class="animate-spin w-5 h-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>{{ currentLang === 'fr' ? 'Recherche...' : 'Searching...' }}</span>
+          } @else {
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <span>{{ searchTexts.search }}</span>
+          }
         </button>
+      </div>
+    </div>
+
+    <!-- Message d'erreur -->
+    @if (error) {
+      <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+        <div class="flex items-center space-x-2 text-red-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="text-sm font-medium">{{ error }}</span>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+  
+<!-- Stats Section - DYNAMIQUE -->
+<section class="py-20 bg-[#F5F6FA] relative bottom-8">
+  <div class="w-[90%] mx-auto px-4 sm:px-6 lg:px-8 relative bottom-24">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div *ngFor="let stat of stats" class="bg-white px-8 py-12 rounded-lg shadow-sm text-center">
+        
+        <!-- Icône sur cercle transparent -->
+        <div class="mb-6">
+          <div class="w-16 h-16 mx-auto bg-blue-100/50 rounded-full flex items-center justify-center">
+            <!-- Icône Users (première stat) -->
+            <svg *ngIf="stat.icon === 'users'" width="57" height="56" viewBox="0 0 57 56" fill="none">
+              <path d="M0.5 28C0.5 12.536 13.036 0 28.5 0C43.964 0 56.5 12.536 56.5 28C56.5 43.464 43.964 56 28.5 56C13.036 56 0.5 43.464 0.5 28Z" fill="#EFF6FF"/>
+              <path d="M33.8333 40V37.3333C33.8333 35.9188 33.2714 34.5623 32.2712 33.5621C31.271 32.5619 29.9144 32 28.5 32H20.5C19.0855 32 17.7289 32.5619 16.7287 33.5621C15.7285 34.5623 15.1666 35.9188 15.1666 37.3333V40" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M33.8334 16.1707C34.977 16.4671 35.9899 17.135 36.7129 18.0694C37.436 19.0038 37.8283 20.1518 37.8283 21.3333C37.8283 22.5148 37.436 23.6628 36.7129 24.5972C35.9899 25.5316 34.977 26.1995 33.8334 26.496" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M41.8334 40V37.3333C41.8325 36.1516 41.4392 35.0037 40.7152 34.0698C39.9912 33.1358 38.9775 32.4688 37.8334 32.1733" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M24.5 26.6667C27.4455 26.6667 29.8333 24.2789 29.8333 21.3333C29.8333 18.3878 27.4455 16 24.5 16C21.5544 16 19.1666 18.3878 19.1666 21.3333C19.1666 24.2789 21.5544 26.6667 24.5 26.6667Z" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <!-- Icône Building (deuxième stat) -->
+            <svg *ngIf="stat.icon === 'building'" width="33" height="32" viewBox="0 0 33 32" fill="none">
+              <path d="M24.4999 2.66675H8.49992C7.02716 2.66675 5.83325 3.86066 5.83325 5.33341V26.6667C5.83325 28.1395 7.02716 29.3334 8.49992 29.3334H24.4999C25.9727 29.3334 27.1666 28.1395 27.1666 26.6667V5.33341C27.1666 3.86066 25.9727 2.66675 24.4999 2.66675Z" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12.5 29.3333V24H20.5V29.3333" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11.1667 8H11.1801" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21.8333 8H21.8466" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16.5 8H16.5133" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16.5 13.3333H16.5133" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16.5 18.6667H16.5133" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21.8333 13.3333H21.8466" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21.8333 18.6667H21.8466" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11.1667 13.3333H11.1801" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11.1667 18.6667H11.1801" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <!-- Icône Globe (troisième stat) -->
+            <svg *ngIf="stat.icon === 'globe'" width="33" height="32" viewBox="0 0 33 32" fill="none">
+              <path d="M16.5001 29.3334C23.8639 29.3334 29.8334 23.3639 29.8334 16.0001C29.8334 8.63628 23.8639 2.66675 16.5001 2.66675C9.13628 2.66675 3.16675 8.63628 3.16675 16.0001C3.16675 23.3639 9.13628 29.3334 16.5001 29.3334Z" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16.5001 2.66675C13.0764 6.26162 11.1667 11.0357 11.1667 16.0001C11.1667 20.9644 13.0764 25.7385 16.5001 29.3334C19.9238 25.7385 21.8334 20.9644 21.8334 16.0001C21.8334 11.0357 19.9238 6.26162 16.5001 2.66675Z" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.16675 16H29.8334" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <!-- Icône Clock (quatrième stat) -->
+            <svg *ngIf="stat.icon === 'clock'" width="57" height="56" viewBox="0 0 57 56" fill="none">
+              <path d="M0.5 28C0.5 12.536 13.036 0 28.5 0C43.964 0 56.5 12.536 56.5 28C56.5 43.464 43.964 56 28.5 56C13.036 56 0.5 43.464 0.5 28Z" fill="#EFF6FF"/>
+              <path d="M41.5 42H31.5C31.2348 42 30.9804 41.8946 30.7929 41.7071C30.6054 41.5196 30.5 41.2652 30.5 41V31C30.5 30.7348 30.6054 30.4804 30.7929 30.2929C30.9804 30.1054 31.2348 30 31.5 30H41.5C41.7652 30 42.0196 30.1054 42.2071 30.2929C42.3946 30.4804 42.5 30.7348 42.5 31V41C42.5 41.2652 42.3946 41.5196 42.2071 41.7071C42.0196 41.8946 41.7652 42 41.5 42ZM32.5 40H40.5V32H32.5V40ZM20.5 42C17.192 42 14.5 39.308 14.5 36C14.5 32.692 17.192 30 20.5 30C23.808 30 26.5 32.692 26.5 36C26.5 39.308 23.808 42 20.5 42ZM20.5 32C18.294 32 16.5 33.794 16.5 36C16.5 38.206 18.294 40 20.5 40C22.706 40 24.5 38.206 24.5 36C24.5 33.794 22.706 32 20.5 32ZM34.5 26H22.5C22.323 26 22.1492 25.953 21.9963 25.8638C21.8434 25.7746 21.7169 25.6464 21.6298 25.4924C21.5427 25.3383 21.498 25.1639 21.5003 24.9869C21.5026 24.8099 21.5518 24.6367 21.643 24.485L27.645 14.482C27.838 14.16 28.169 14 28.5 14C28.831 14 29.162 14.16 29.355 14.482L35.357 24.485C35.4482 24.6367 35.4974 24.8099 35.4997 24.9869C35.502 25.1639 35.4573 25.3383 35.3702 25.4924C35.2831 25.6464 35.1566 25.7746 35.0037 25.8638C34.8508 25.953 34.677 26 34.5 26ZM24.266 24H32.734L28.5 16.944L24.266 24Z" fill="#2563EB"/>
+            </svg>
+          </div>
+        </div>
+        
+        <div class="text-4xl font-bold text-gray-900 mb-2">
+          {{ stat.number }}
+        </div>
+        <div class="text-gray-600 text-base">{{ stat.label }}</div>
       </div>
     </div>
   </div>
 </section>
-  
-<!-- home.component.html (extrait modifié - section stats) -->
-<section class="py-20 bg-[#F5F6FA] relative bottom-8">
-    <div class="w-[90%] mx-auto px-4 sm:px-6 lg:px-8 relative bottom-24">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div 
-          *ngFor="let stat of stats" 
-          class="bg-white px-8 py-12 rounded-lg shadow-sm text-center">
-          
-          <!-- Icône sur cercle transparent -->
-          <div class="mb-6">
-            <div class="w-16 h-16 mx-auto bg-blue-100/50 rounded-full flex items-center justify-center">
-              <!-- Icône Users (première stat) -->
-              <svg *ngIf="stat.icon === 'users'" width="57" height="56" viewBox="0 0 57 56" fill="none">
-                <path d="M0.5 28C0.5 12.536 13.036 0 28.5 0C43.964 0 56.5 12.536 56.5 28C56.5 43.464 43.964 56 28.5 56C13.036 56 0.5 43.464 0.5 28Z" fill="#EFF6FF"/>
-                <path d="M33.8333 40V37.3333C33.8333 35.9188 33.2714 34.5623 32.2712 33.5621C31.271 32.5619 29.9144 32 28.5 32H20.5C19.0855 32 17.7289 32.5619 16.7287 33.5621C15.7285 34.5623 15.1666 35.9188 15.1666 37.3333V40" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M33.8334 16.1707C34.977 16.4671 35.9899 17.135 36.7129 18.0694C37.436 19.0038 37.8283 20.1518 37.8283 21.3333C37.8283 22.5148 37.436 23.6628 36.7129 24.5972C35.9899 25.5316 34.977 26.1995 33.8334 26.496" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M41.8334 40V37.3333C41.8325 36.1516 41.4392 35.0037 40.7152 34.0698C39.9912 33.1358 38.9775 32.4688 37.8334 32.1733" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M24.5 26.6667C27.4455 26.6667 29.8333 24.2789 29.8333 21.3333C29.8333 18.3878 27.4455 16 24.5 16C21.5544 16 19.1666 18.3878 19.1666 21.3333C19.1666 24.2789 21.5544 26.6667 24.5 26.6667Z" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-  
-              <!-- Icône Building (deuxième stat) -->
-              <svg *ngIf="stat.icon === 'building'" width="33" height="32" viewBox="0 0 33 32" fill="none">
-                <path d="M24.4999 2.66675H8.49992C7.02716 2.66675 5.83325 3.86066 5.83325 5.33341V26.6667C5.83325 28.1395 7.02716 29.3334 8.49992 29.3334H24.4999C25.9727 29.3334 27.1666 28.1395 27.1666 26.6667V5.33341C27.1666 3.86066 25.9727 2.66675 24.4999 2.66675Z" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12.5 29.3333V24H20.5V29.3333" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M11.1667 8H11.1801" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M21.8333 8H21.8466" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M16.5 8H16.5133" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M16.5 13.3333H16.5133" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M16.5 18.6667H16.5133" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M21.8333 13.3333H21.8466" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M21.8333 18.6667H21.8466" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M11.1667 13.3333H11.1801" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M11.1667 18.6667H11.1801" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-  
-              <!-- Icône Globe (troisième stat) -->
-              <svg *ngIf="stat.icon === 'globe'" width="33" height="32" viewBox="0 0 33 32" fill="none">
-                <path d="M16.5001 29.3334C23.8639 29.3334 29.8334 23.3639 29.8334 16.0001C29.8334 8.63628 23.8639 2.66675 16.5001 2.66675C9.13628 2.66675 3.16675 8.63628 3.16675 16.0001C3.16675 23.3639 9.13628 29.3334 16.5001 29.3334Z" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M16.5001 2.66675C13.0764 6.26162 11.1667 11.0357 11.1667 16.0001C11.1667 20.9644 13.0764 25.7385 16.5001 29.3334C19.9238 25.7385 21.8334 20.9644 21.8334 16.0001C21.8334 11.0357 19.9238 6.26162 16.5001 2.66675Z" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M3.16675 16H29.8334" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-  
-              <!-- Icône Clock (quatrième stat) -->
-              <svg *ngIf="stat.icon === 'clock'" width="57" height="56" viewBox="0 0 57 56" fill="none">
-                <path d="M0.5 28C0.5 12.536 13.036 0 28.5 0C43.964 0 56.5 12.536 56.5 28C56.5 43.464 43.964 56 28.5 56C13.036 56 0.5 43.464 0.5 28Z" fill="#EFF6FF"/>
-                <path d="M41.5 42H31.5C31.2348 42 30.9804 41.8946 30.7929 41.7071C30.6054 41.5196 30.5 41.2652 30.5 41V31C30.5 30.7348 30.6054 30.4804 30.7929 30.2929C30.9804 30.1054 31.2348 30 31.5 30H41.5C41.7652 30 42.0196 30.1054 42.2071 30.2929C42.3946 30.4804 42.5 30.7348 42.5 31V41C42.5 41.2652 42.3946 41.5196 42.2071 41.7071C42.0196 41.8946 41.7652 42 41.5 42ZM32.5 40H40.5V32H32.5V40ZM20.5 42C17.192 42 14.5 39.308 14.5 36C14.5 32.692 17.192 30 20.5 30C23.808 30 26.5 32.692 26.5 36C26.5 39.308 23.808 42 20.5 42ZM20.5 32C18.294 32 16.5 33.794 16.5 36C16.5 38.206 18.294 40 20.5 40C22.706 40 24.5 38.206 24.5 36C24.5 33.794 22.706 32 20.5 32ZM34.5 26H22.5C22.323 26 22.1492 25.953 21.9963 25.8638C21.8434 25.7746 21.7169 25.6464 21.6298 25.4924C21.5427 25.3383 21.498 25.1639 21.5003 24.9869C21.5026 24.8099 21.5518 24.6367 21.643 24.485L27.645 14.482C27.838 14.16 28.169 14 28.5 14C28.831 14 29.162 14.16 29.355 14.482L35.357 24.485C35.4482 24.6367 35.4974 24.8099 35.4997 24.9869C35.502 25.1639 35.4573 25.3383 35.3702 25.4924C35.2831 25.6464 35.1566 25.7746 35.0037 25.8638C34.8508 25.953 34.677 26 34.5 26ZM24.266 24H32.734L28.5 16.944L24.266 24Z" fill="#2563EB"/>
-              </svg>
-            </div>
-          </div>
-          
-          <div class="text-4xl font-bold text-gray-900 mb-2">
-            {{ stat.number }}
-          </div>
-          <div class="text-gray-600 text-base">{{ stat.label }}</div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-<!-- Actualités Section -->
+<!-- Actualités Section - DYNAMIQUE -->
 <section class="py-16 bg-white">
   <div class="w-[90%] mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center mb-12">
@@ -178,21 +205,62 @@
       </button>
     </div>
     
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div *ngFor="let actualite of actualites" class="bg-white overflow-hidden">
-        <div class="h-48 bg-gray-200 bg-cover bg-center" [style.background-image]="'url(' + actualite.image + ')'"></div>
-        <div class="pt-4">
-          <div class="text-red-600 text-sm font-medium mb-2">{{ actualite.category }}</div>
-          <h3 class="text-xl font-semibold text-gray-900 mb-3">{{ actualite.title }}</h3>
-          <p class="text-gray-600 mb-4">{{ actualite.description }}</p>
-          <div class="text-sm text-gray-500">{{ actualite.date }}</div>
-        </div>
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-8">
+      <div class="inline-flex items-center">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        {{ searchTexts.loading }}
       </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+      {{ error }}
+    </div>
+    
+ <!-- Annonces Dynamiques -->
+ <div *ngIf="!isLoading && !error" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+  <div *ngFor="let annonce of annonces" class="group cursor-pointer">
+    <!-- Image de l'annonce -->
+    <div class="relative h-56 bg-gray-200 bg-cover bg-center overflow-hidden mb-4" 
+         [style.background-image]="'url(https://wakana.online/repertoire_amchams/' + annonce.image + ')'">
+      <div class="absolute top-4 left-4">
+   
+      </div>
+      
+    </div>
+    
+    <!-- Détails de l'annonce -->
+    <div>
+      <span class="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+        {{ getCategoryName(annonce) }}
+      </span>
+      <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors line-clamp-2">
+        {{ annonce.title }}
+      </h3>
+      <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ annonce.description }}</p>
+      
+      <div class="text-xs text-gray-500">
+        {{ formatDate(annonce.startDate) }}
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && !error && annonces.length === 0" class="text-center py-12">
+      <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">{{ searchTexts.noAnnouncements }}</h3>
     </div>
   </div>
 </section>
   
-<!-- Nos Membres Section -->
+<!-- Nos Membres Section - DYNAMIQUE -->
 <section class="py-16 bg-[#F5F6FA]">
   <div class="w-[90%] mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center mb-4">
@@ -201,19 +269,19 @@
         <p class="text-gray-600">{{ searchTexts.membersDesc }}</p>
       </div>
       <div class="text-blue-600 font-medium">
-        {{ searchTexts.membersDisplayed }}
+        {{ membres.length }} {{ searchTexts.membersDisplayed }}
       </div>
     </div>
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-      <div *ngFor="let membre of membres" class="bg-white border border-gray-200 rounded-lg p-6">
+      <div *ngFor="let membre of membres" class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-300">
         <div class="flex items-center space-x-4 mb-4">
-          <div class="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center text-white font-bold">
-            {{ membre.name.charAt(0) }}
+          <div class="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+            {{ getInitial(membre.nom) }}
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-gray-900">{{ membre.name }}</h3>
-            <p class="text-gray-600 text-sm">{{ currentLang === 'fr' ? membre.categoryFr : membre.categoryEn }}</p>
+            <h3 class="text-lg font-semibold text-gray-900">{{ membre.nom }}</h3>
+            <p class="text-gray-600 text-sm">{{ membre.secteur }}</p>
           </div>
         </div>
         
@@ -223,25 +291,56 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
-            {{ currentLang === 'fr' ? membre.locationFr : membre.locationEn }}
+            {{ membre.adresse }}
+          </div>
+          <div class="flex items-center text-gray-600 text-sm">
+            <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            {{ membre.email }}
+          </div>
+          <div class="flex items-center text-gray-600 text-sm">
+            <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+            </svg>
+            {{ membre.telephone }}
           </div>
         </div>
         
-        <p class="text-gray-600 text-sm mb-6">{{ currentLang === 'fr' ? membre.descriptionFr : membre.descriptionEn }}</p>
+        <p class="text-gray-600 text-sm mb-6 line-clamp-2">
+          {{ membre.description }}
+        </p>
+        
+        <div class="flex items-center justify-between mb-4">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            {{ membre.countryAmcham }}
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            {{ membre.countryAmcham }}
+          </span>
+        </div>
         
         <div class="flex space-x-3">
-          <button class="flex-1 border border-red-600 text-red-600 py-2 px-4 rounded-lg text-sm font-medium">
+          <button class="flex-1 border border-red-600 text-red-600 hover:bg-red-600 hover:text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-300">
             {{ searchTexts.contact }}
           </button>
-          <button (click)="navigateToMembreDetails(membre.id)" class="flex-1 bg-blue-900 text-white py-2 px-4 rounded-lg text-sm font-medium">
+          <button (click)="navigateToMembreDetails(membre.id)" class="flex-1 bg-blue-900 hover:bg-blue-800 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-300">
             {{ searchTexts.viewProfile }}
           </button>
         </div>
       </div>
     </div>
 
+    <!-- Empty State pour les membres -->
+    <div *ngIf="membres.length === 0 && !isLoading" class="text-center py-12">
+      <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+      </svg>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">{{ searchTexts.noMembers }}</h3>
+    </div>
+
     <div class="flex justify-center">
-      <button (click)="navigateToMembres()" class="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-medium flex items-center space-x-2">
+      <button (click)="navigateToMembres()" class="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors duration-300">
         <span>{{ searchTexts.seeAllMembers }}</span>
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -320,16 +419,36 @@
 <section class="py-16 bg-white">
   <div class="w-[90%] mx-auto px-4 sm:px-6 lg:px-8">
     <h2 class="text-3xl font-bold text-gray-900 text-center mb-12">{{ searchTexts.partnersTitle }}</h2>
-    <div class="flex justify-center items-center space-x-16 opacity-70">
-      <div *ngFor="let partenaire of partenaires" class="flex items-center justify-center">
-        <img [src]="partenaire.logo" [alt]="partenaire.name" class="h-16 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300">
+    
+    @if (partenaires.length === 0) {
+      <!-- Skeleton loader pendant le chargement -->
+      <div class="flex justify-center items-center space-x-16 opacity-70">
+        @for (item of [1,2,3]; track $index) {
+          <div class="flex items-center justify-center">
+            <div class="h-16 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        }
       </div>
-    </div>
+    } @else {
+      <!-- Partenaires chargés -->
+      <div class="flex justify-center items-center space-x-16 opacity-70">
+        @for (partenaire of partenaires; track partenaire.id) {
+          <div class="flex items-center justify-center">
+            <img 
+              [src]="'https://wakana.online/repertoire_amchams/'+ partenaire.logo" 
+              [alt]="partenaire.name" 
+              class="h-16 w-auto object-contain grayscale grayscale-0 transition-all duration-300"
+              (error)="partenaire.logo = '/assets/placeholder-logo.png'"
+            >
+          </div>
+        }
+      </div>
+    }
   </div>
 </section>
   
   <!-- Footer -->
-  <footer class="bg-blue-900 text-white py-12">
+  <footer class="bg-[#132742]  text-white py-2">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center">
         <p class="text-blue-200">&copy; 2025 AmCham. Tous droits réservés.</p>
@@ -355,5 +474,3 @@
   </footer>
   
 </div>
-<!-- voici le ts  -->
-

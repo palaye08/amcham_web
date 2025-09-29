@@ -12,6 +12,8 @@ import { BanniereComponent } from './components/banniere/banniere.component';
 import { AnnoncesComponent } from './components/annonces/annonces.component';
 import { StaticComponent } from './components/static/static.component';
 import { AmchamsComponent } from './components/amchams/amchams.component';
+import { CategoriesComponent } from './components/categories/categories.component';
+import { SecteursComponent } from './components/secteurs/secteurs.component';
 
 export const routes: Routes = [
     { path: '', component: HomeComponent }, // Route pour la page d'accueil
@@ -27,6 +29,9 @@ export const routes: Routes = [
     { path: 'announcements', component: AnnoncesComponent }, // Route pour la page de annonce
     { path: 'statistics', component: StaticComponent }, // Route pour la page de statistics
     { path: 'amcham', component: AmchamsComponent }, // Route pour la page de statistics
+    { path: 'categories', component: CategoriesComponent }, // Route pour la page de statistics
+    { path: 'secteurs', component: SecteursComponent }, // Route pour la page de statistics
+    
     
     { path: '**', redirectTo: '' }, // Redirection pour les routes non trouvées
 

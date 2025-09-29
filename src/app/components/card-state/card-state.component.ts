@@ -34,7 +34,7 @@ export class CardStateComponent implements OnInit, OnDestroy {
     clickGrowth: 18
   };
 
-  @Input() type: 'members' | 'announcements'| 'banners' | 'amchams' | 'statics' = 'members';
+  @Input() type: 'members' | 'announcements'| 'banners' | 'amchams' | 'categories' | 'secteurs' | 'statics' = 'members';
 
   private langSubscription!: Subscription;
   currentLang = 'fr';

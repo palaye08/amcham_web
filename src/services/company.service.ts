@@ -1,0 +1,351 @@
+// company.service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+
+// Interfaces
+export interface Company {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  email: string;
+  telephone: string;
+  videoLink: string;
+  countryAmcham: string;
+  country: string;
+  sector: string;
+  webLink: string;
+  pictures: string[];
+  lat: number;
+  lon: number;
+}
+
+export interface CompanySearchResponse {
+  content: Company[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      sorted: boolean;
+      unsorted: boolean;
+      empty: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+  numberOfElements: number;
+  size: number;
+  number: number;
+  sort: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
+  first: boolean;
+  empty: boolean;
+}
+
+export interface CompanyContactStats {
+  today: number;
+  lastWeek: number;
+  lastMonth: number;
+  currentYear: number;
+}
+
+export interface CompanyFormData {
+  name: string;
+  description: string;
+  address: string;
+  email: string;
+  telephone: string;
+  webLink: string;
+  countryAmchamId: number;
+  sectorId: number;
+  videoLink: string;
+  logoFile?: File;
+  lat: number;
+  lon: number;
+}
+
+export interface SearchParams {
+  page?: number;
+  size?: number;
+  name?: string;
+  sector?: string;
+  country?: string;
+}
+
+export interface MembresParams {
+  page?: number;
+  size?: number;
+  name?: string;
+  sector?: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CompanyService {
+  private readonly baseUrl = 'https://wakana.online/annuaire-amcham';
+
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Sauvegarder une entreprise - POST /api/companies/save
+   */
+  saveCompany(companyData: CompanyFormData): Observable<any> {
+    const formData = this.createFormData(companyData);
+    
+    return this.http.post(`${this.baseUrl}/api/companies/save`, formData)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Rechercher des entreprises - GET /api/companies/search
+   */
+  getCompanySearch(params: SearchParams): Observable<CompanySearchResponse> {
+    let httpParams = new HttpParams();
+    
+    // Paramètres de pagination
+    if (params.page !== undefined) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params.size !== undefined) {
+      httpParams = httpParams.set('size', params.size.toString());
+    }
+    
+    // Paramètres de recherche
+    if (params.name) {
+      httpParams = httpParams.set('name', params.name);
+    }
+    if (params.sector) {
+      httpParams = httpParams.set('sector', params.sector);
+    }
+    if (params.country) {
+      httpParams = httpParams.set('country', params.country);
+    }
+
+    return this.http.get<CompanySearchResponse>(`${this.baseUrl}/api/companies/search`, { params: httpParams })
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Obtenir les membres d'un pays AMCHAM - GET /api/companies/country-amcham/{countryAmchamId}
+   */
+  getMembres(countryAmchamId: number, params?: MembresParams): Observable<CompanySearchResponse> {
+    let httpParams = new HttpParams();
+    
+    // Paramètres de pagination
+    if (params?.page !== undefined) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params?.size !== undefined) {
+      httpParams = httpParams.set('size', params.size.toString());
+    }
+    
+    // Paramètres de recherche
+    if (params?.name) {
+      httpParams = httpParams.set('name', params.name);
+    }
+    if (params?.sector) {
+      httpParams = httpParams.set('sector', params.sector);
+    }
+
+    return this.http.get<CompanySearchResponse>(
+      `${this.baseUrl}/api/companies/country-amcham/${countryAmchamId}`,
+      { params: httpParams }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtenir les statistiques de contacts d'une entreprise - GET /api/companies/contacts/{companyId}/circular-stats
+   */
+  getCompanyContact(companyId: number): Observable<CompanyContactStats> {
+    return this.http.get<CompanyContactStats>(`${this.baseUrl}/api/companies/contacts/${companyId}/circular-stats`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Obtenir une entreprise par son ID
+   */
+  getCompanyById(companyId: number): Observable<Company> {
+    return this.http.get<Company>(`${this.baseUrl}/api/companies/${companyId}`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Mettre à jour une entreprise
+   */
+  updateCompany(companyId: number, companyData: CompanyFormData): Observable<any> {
+    const formData = this.createFormData(companyData);
+    
+    return this.http.put(`${this.baseUrl}/api/companies/${companyId}`, formData)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Supprimer une entreprise
+   */
+  deleteCompany(companyId: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/api/companies/${companyId}`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Obtenir toutes les entreprises sans pagination
+   */
+  getAllCompanies(): Observable<Company[]> {
+    return this.http.get<Company[]>(`${this.baseUrl}/api/companies/all`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Obtenir les entreprises par secteur
+   */
+  getCompaniesBySector(sectorId: number, params?: { page?: number; size?: number }): Observable<CompanySearchResponse> {
+    let httpParams = new HttpParams();
+    
+    if (params?.page !== undefined) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params?.size !== undefined) {
+      httpParams = httpParams.set('size', params.size.toString());
+    }
+
+    return this.http.get<CompanySearchResponse>(
+      `${this.baseUrl}/api/companies/sector/${sectorId}`,
+      { params: httpParams }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtenir les entreprises par pays
+   */
+  getCompaniesByCountry(country: string, params?: { page?: number; size?: number }): Observable<CompanySearchResponse> {
+    let httpParams = new HttpParams();
+    
+    if (params?.page !== undefined) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params?.size !== undefined) {
+      httpParams = httpParams.set('size', params.size.toString());
+    }
+
+    return this.http.get<CompanySearchResponse>(
+      `${this.baseUrl}/api/companies/country/${country}`,
+      { params: httpParams }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtenir le nombre total d'entreprises
+   */
+  getTotalCompanies(): Observable<number> {
+    return this.http.get<number>(`${this.baseUrl}/api/companies/total`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Créer FormData pour l'upload de fichiers
+   */
+  private createFormData(companyData: CompanyFormData): FormData {
+    const formData = new FormData();
+    
+    // Ajouter les champs texte
+    formData.append('name', companyData.name || '');
+    formData.append('description', companyData.description || '');
+    formData.append('address', companyData.address || '');
+    formData.append('email', companyData.email || '');
+    formData.append('telephone', companyData.telephone || '');
+    formData.append('webLink', companyData.webLink || '');
+    formData.append('countryAmchamId', companyData.countryAmchamId?.toString() || '');
+    formData.append('sectorId', companyData.sectorId?.toString() || '');
+    formData.append('videoLink', companyData.videoLink || '');
+    formData.append('lat', companyData.lat?.toString() || '');
+    formData.append('lon', companyData.lon?.toString() || '');
+    
+    // Ajouter le fichier logo si présent
+    if (companyData.logoFile) {
+      formData.append('logoFile', companyData.logoFile);
+    }
+
+    return formData;
+  }
+
+  /**
+   * Gestion des erreurs HTTP
+   */
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    let errorMessage = 'Une erreur est survenue';
+    
+    if (error.error instanceof ErrorEvent) {
+      // Erreur côté client
+      errorMessage = `Erreur: ${error.error.message}`;
+    } else {
+      // Erreur côté serveur
+      errorMessage = this.getErrorMessage(error.status, error.error);
+    }
+    
+    console.error('Erreur CompanyService:', error);
+    return throwError(() => ({
+      message: errorMessage,
+      status: error.status,
+      error: error.error
+    }));
+  }
+
+  /**
+   * Messages d'erreur selon le statut HTTP
+   */
+  private getErrorMessage(status: number, error?: any): string {
+    switch (status) {
+      case 400:
+        if (error?.message) {
+          return error.message;
+        }
+        return 'Données invalides';
+      case 401:
+        return 'Non autorisé';
+      case 403:
+        return 'Accès interdit';
+      case 404:
+        return 'Ressource non trouvée';
+      case 409:
+        return 'Une entreprise avec ce nom existe déjà';
+      case 413:
+        return 'Fichier trop volumineux';
+      case 500:
+        return 'Erreur interne du serveur';
+      default:
+        return 'Erreur de connexion';
+    }
+  }
+}

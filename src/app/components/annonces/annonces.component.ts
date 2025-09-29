@@ -2,24 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HeaderAdminComponent } from "../header-admin/header-admin.component";
-import { LanguageService } from '../../../services/language.service';
 import { Subscription } from 'rxjs';
+import { HeaderAdminComponent } from "../header-admin/header-admin.component";
 import { CardStateComponent } from "../card-state/card-state.component";
+import { LanguageService } from '../../../services/language.service';
+import { CategoryService, CategoryResponse } from '../../../services/category.service';
 
-type Categorie = 'Événement' | 'Opportunité' | 'Actualité' | 'Event' | 'Opportunity' | 'News';
-type Statut = 'Public' | 'Brouillon' | 'Draft';
-
-interface Annonce {
-  id: number;
-  titre: string;
-  description: string;
-  categorie: Categorie;
-  statut: Statut;
-  date: string;
-  datePublication: string;
-  contenu: string;
-}
+// Import direct du service et des interfaces
+import { AnnonceService, Annonce, AnnonceResponse, AnnoncePageResponse, SearchParams } from '../../../services/annonce.service';
 
 @Component({
   selector: 'app-annonces',
@@ -30,81 +20,38 @@ interface Annonce {
 })
 export class AnnoncesComponent implements OnInit, OnDestroy {
   showAddAnnouncementModal = false;
+  showEditAnnouncementModal = false;
   announcementForm!: FormGroup;
-  annonces: Annonce[] = [
-    {
-      id: 1,
-      titre: 'Forum économique franco-américain',
-      description: 'Appel à candidatures: Programme d\'échange',
-      categorie: 'Événement',
-      statut: 'Public',
-      date: '01/05/2025',
-      datePublication: '2025-05-01',
-      contenu: 'Le Forum économique franco-américain annonce l\'ouverture des candidatures pour son programme d\'échange 2025. Une opportunité unique pour les entreprises des deux pays.'
-    },
-    {
-      id: 2,
-      titre: 'Nouvelles régulations commerciales',
-      description: 'Mise à jour des politiques commerciales internationales',
-      categorie: 'Actualité',
-      statut: 'Public',
-      date: '15/05/2025',
-      datePublication: '2025-05-15',
-      contenu: 'Les nouvelles régulations commerciales entreront en vigueur le 1er juin 2025. Toutes les entreprises sont invitées à se conformer aux nouvelles directives.'
-    },
-    {
-      id: 3,
-      titre: 'Opportunité de partenariat stratégique',
-      description: 'Recherche de partenaires dans le secteur technologique',
-      categorie: 'Opportunité',
-      statut: 'Brouillon',
-      date: '10/04/2025',
-      datePublication: '2025-04-10',
-      contenu: 'Nous recherchons des partenaires stratégiques dans le domaine des technologies émergentes pour développer de nouvelles solutions innovantes.'
-    }
-  ];
-
-  filteredAnnonces: Annonce[] = [...this.annonces];
-  selectedCategory = 'all';
-  selectedStatus = 'all';
+  editingId: number | null = null;
+  
+  annonces: AnnonceResponse[] = [];
+  filteredAnnonces: AnnonceResponse[] = [];
+  categories: CategoryResponse[] = [];
+  
+  selectedCategoryId: number | null = null;
   searchTerm = '';
   currentRoute: string;
+  loading = false;
+  error: string | null = null;
+  
+  // Pagination
+  currentPage = 0;
+  pageSize = 10;
+  totalElements = 0;
+  totalPages = 0;
+  
+  // Preview de l'image
+  imagePreview: string | null = null;
+  selectedImageFile: File | null = null;
+  
   private langSubscription!: Subscription;
   currentLang = 'fr';
-
-  // Statistiques calculées
-  get stats() {
-    const totalAnnouncements = this.annonces.length;
-    const publishedAnnouncements = this.annonces.filter(a => a.statut === 'Public' ).length;
-    const draftAnnouncements = this.annonces.filter(a => a.statut === 'Brouillon' || a.statut === 'Draft').length;
-    
-    const lastMonthAnnouncements = this.annonces.filter(a => {
-      const announcementDate = new Date(a.date.split('/').reverse().join('-'));
-      const lastMonth = new Date();
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-      return announcementDate > lastMonth;
-    }).length;
-
-    return {
-      totalAnnouncements,
-      publishedAnnouncements,
-      draftAnnouncements,
-      announcementGrowth: totalAnnouncements > 0 ? Math.round((lastMonthAnnouncements / totalAnnouncements) * 100) : 0,
-      publishedGrowth: 15
-    };
-  }
+  document: any;
 
   // Textes dynamiques
   get texts() {
     return this.currentLang === 'fr' ? {
       announcementsManagement: 'Gestion des annonces',
-      totalMembers:123,
-      totalAnnouncements: 'Annonces totales',
-      sinceLastMonth: 'depuis le mois dernier',
-      publishedAnnouncements: 'Annonces publiées',
-      sinceLastWeek: 'depuis la semaine dernière',
-      draftAnnouncements: 'Annonces brouillon',
-      awaitingPublication: 'en attente de publication',
       searchPlaceholder: 'Rechercher ici...',
       allCategories: 'Toutes les catégories',
       allStatuses: 'Tous les statuts',
@@ -114,29 +61,31 @@ export class AnnoncesComponent implements OnInit, OnDestroy {
       status: 'Statut',
       date: 'Date',
       actions: 'Actions',
-      public: 'Public',
-      draft: 'Brouillon',
-      event: 'Événement',
-      opportunity: 'Opportunité',
-      news: 'Actualité',
-      newAnnouncement: 'Nouvelle annonce',
+      newAnnouncement: 'Nouvelle Annonce',
+      editAnnouncement: 'Modifier l\'Annonce',
       title: 'Titre',
       description: 'Description',
-      publicationDate: 'Date de publication',
-      content: 'Contenu',
+      startDate: 'Date de début',
+      endDate: 'Date de fin',
+      startTime: 'Heure de début',
+      endTime: 'Heure de fin',
+      address: 'Adresse',
+      image: 'Image',
+      chooseFile: 'Choisir un fichier',
+      noFileChosen: 'Aucun fichier choisi',
       save: 'Enregistrer',
       cancel: 'Annuler',
-      select: 'Sélectionner',
-      view: 'Voir',
-      edit: 'Modifier'
+      confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette annonce ?',
+      loading: 'Chargement...',
+      noAnnouncementFound: 'Aucune annonce trouvée',
+      tryDifferentSearch: 'Essayez de modifier vos critères de recherche ou de filtre.',
+      errorOccurred: 'Une erreur est survenue',
+      announcementAdded: 'Annonce ajoutée avec succès',
+      announcementUpdated: 'Annonce modifiée avec succès',
+      announcementDeleted: 'Annonce supprimée avec succès',
+      selectCategory: 'Sélectionner'
     } : {
       announcementsManagement: 'Announcements Management',
-      totalAnnouncements: 'Total Announcements',
-      sinceLastMonth: 'since last month',
-      publishedAnnouncements: 'Published Announcements',
-      sinceLastWeek: 'since last week',
-      draftAnnouncements: 'Draft Announcements',
-      awaitingPublication: 'awaiting publication',
       searchPlaceholder: 'Search here...',
       allCategories: 'All categories',
       allStatuses: 'All statuses',
@@ -146,41 +95,55 @@ export class AnnoncesComponent implements OnInit, OnDestroy {
       status: 'Status',
       date: 'Date',
       actions: 'Actions',
-      public: 'Public',
-      draft: 'Draft',
-      event: 'Event',
-      opportunity: 'Opportunity',
-      news: 'News',
       newAnnouncement: 'New Announcement',
+      editAnnouncement: 'Edit Announcement',
       title: 'Title',
       description: 'Description',
-      publicationDate: 'Publication Date',
-      content: 'Content',
+      startDate: 'Start Date',
+      endDate: 'End Date',
+      startTime: 'Start Time',
+      endTime: 'End Time',
+      address: 'Address',
+      image: 'Image',
+      chooseFile: 'Choose a file',
+      noFileChosen: 'No file chosen',
       save: 'Save',
       cancel: 'Cancel',
-      select: 'Select',
-      view: 'View',
-      edit: 'Edit'
+      confirmDelete: 'Are you sure you want to delete this announcement?',
+      loading: 'Loading...',
+      noAnnouncementFound: 'No announcements found',
+      tryDifferentSearch: 'Try modifying your search or filter criteria.',
+      errorOccurred: 'An error occurred',
+      announcementAdded: 'Announcement added successfully',
+      announcementUpdated: 'Announcement updated successfully',
+      announcementDeleted: 'Announcement deleted successfully',
+      selectCategory: 'Select'
     };
   }
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private categoryService: CategoryService,
+    private annonceService: AnnonceService // Injection directe du service
   ) {
     this.currentRoute = this.router.url;
     this.initializeForm();
   }
 
   ngOnInit(): void {
+    console.log('AnnonceService injecté:', this.annonceService); // Debug
+    
     this.langSubscription = this.languageService.currentLang$.subscribe(lang => {
       this.currentLang = lang;
-      this.updateAnnoncesLanguage();
     });
     
     this.currentLang = this.languageService.getCurrentLanguage();
-    this.updateAnnoncesLanguage();
+    
+    // Chargement immédiat sans délai
+    this.loadCategories();
+    this.loadAnnonces();
   }
 
   ngOnDestroy(): void {
@@ -191,119 +154,331 @@ export class AnnoncesComponent implements OnInit, OnDestroy {
 
   private initializeForm(): void {
     this.announcementForm = this.fb.group({
-      titre: ['', [Validators.required]],
+      title: ['', [Validators.required]],
       description: ['', [Validators.required]],
-      categorie: ['', [Validators.required]],
-      datePublication: ['', [Validators.required]],
-      statut: ['Public', [Validators.required]],
-      contenu: ['', [Validators.required]]
+      startDate: ['', [Validators.required]],
+      endDate: ['', [Validators.required]],
+      startTime: ['', [Validators.required]],
+      endTime: ['', [Validators.required]],
+      address: ['', [Validators.required]],
+      categoryId: [null, [Validators.required]],
+      imageFile: [null]
     });
   }
 
-  private updateAnnoncesLanguage(): void {
-    this.annonces = this.annonces.map(annonce => ({
-      ...annonce,
-      categorie: this.translateCategory(annonce.categorie),
-      statut: this.translateStatus(annonce.statut)
-    })) as Annonce[];
-    this.filterAnnouncements();
+  private loadCategories(): void {
+    this.categoryService.getCategories().subscribe({
+      next: (categories) => {
+        this.categories = categories;
+        console.log('Catégories chargées:', categories); // Debug
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des catégories:', error);
+        this.error = 'Erreur lors du chargement des catégories';
+      }
+    });
   }
 
-  private translateCategory(category: Categorie): Categorie {
-    const categoryMap: Record<string, Categorie> = this.currentLang === 'fr' ? {
-      'Event': 'Événement',
-      'Opportunity': 'Opportunité',
-      'News': 'Actualité'
-    } : {
-      'Événement': 'Event',
-      'Opportunité': 'Opportunity',
-      'Actualité': 'News'
+  private loadAnnonces(): void {
+    this.loading = true;
+    this.error = null;
+
+    const searchParams: SearchParams = {
+      page: this.currentPage,
+      size: this.pageSize
     };
-    return categoryMap[category] || category;
+
+    if (this.selectedCategoryId) {
+      searchParams.categoryId = this.selectedCategoryId;
+    }
+
+    if (this.searchTerm.trim()) {
+      searchParams.title = this.searchTerm.trim();
+    }
+
+    console.log('Paramètres de recherche:', searchParams); // Debug
+
+    this.annonceService.getAnnonces(searchParams).subscribe({
+      next: (response: AnnoncePageResponse) => {
+        console.log('Réponse du service:', response); // Debug
+        this.annonces = response.content;
+        this.totalElements = response.totalElements;
+        this.totalPages = response.totalPages;
+        this.updateFilteredAnnonces();
+        this.loading = false;
+        
+        console.log('Annonces chargées:', this.annonces.length); // Debug
+      },
+      error: (error: any) => {
+        console.error('Erreur complète:', error); // Debug
+        this.error = error.message || 'Erreur lors du chargement des annonces';
+        this.loading = false;
+        this.annonces = [];
+        this.updateFilteredAnnonces();
+      }
+    });
   }
 
-  private translateStatus(status: Statut): Statut {
-    const statusMap: Record<string, Statut> = this.currentLang === 'fr' ? {
-      'Draft': 'Brouillon'
-    } : {
-      'Brouillon': 'Draft'
-    };
-    return statusMap[status] || status;
+  private updateFilteredAnnonces(): void {
+    this.filteredAnnonces = [...this.annonces];
+    console.log('Annonces filtrées:', this.filteredAnnonces.length); // Debug
   }
 
   onSearch(event: any): void {
-    this.searchTerm = event.target.value.toLowerCase();
-    this.filterAnnouncements();
+    this.searchTerm = event.target.value;
+    this.currentPage = 0;
+    this.loadAnnonces();
   }
 
   onCategoryFilter(event: any): void {
-    this.selectedCategory = event.target.value;
-    this.filterAnnouncements();
+    const value = event.target.value;
+    this.selectedCategoryId = value === 'all' ? null : parseInt(value);
+    this.currentPage = 0;
+    this.loadAnnonces();
   }
 
-  onStatusFilter(event: any): void {
-    this.selectedStatus = event.target.value;
-    this.filterAnnouncements();
+  getCategoryDisplayName(category: { nameFr: string; nameEn: string }): string {
+    return this.currentLang === 'fr' ? category.nameFr : category.nameEn;
   }
 
-  private filterAnnouncements(): void {
-    this.filteredAnnonces = this.annonces.filter(annonce => {
-      const matchesSearch = annonce.titre.toLowerCase().includes(this.searchTerm) ||
-                          annonce.description.toLowerCase().includes(this.searchTerm) ||
-                          annonce.contenu.toLowerCase().includes(this.searchTerm);
-      
-      const matchesCategory = this.selectedCategory === 'all' || annonce.categorie === this.selectedCategory;
-      const matchesStatus = this.selectedStatus === 'all' || annonce.statut === this.selectedStatus;
-      
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
+  getAnnonceImage(annonce: AnnonceResponse): string {
+    if (!annonce.image) {
+      return '/assets/images/default-event.jpg';
+    }
+    
+    // Vérifier si l'image est déjà une URL complète
+    if (annonce.image.startsWith('http')) {
+      return annonce.image;
+    }
+    
+    // Construire l'URL complète
+    const imageUrl = `https://wakana.online/repertoire_amchams/${annonce.image}`;
+    console.log('URL image:', imageUrl); // Debug
+    return imageUrl;
   }
 
   openAddAnnouncementModal(): void {
     this.showAddAnnouncementModal = true;
-    this.announcementForm.reset({
-      statut: 'Public',
-      datePublication: new Date().toISOString().split('T')[0]
-    });
+    this.showEditAnnouncementModal = false;
+    this.editingId = null;
+    this.announcementForm.reset();
+    this.imagePreview = null;
+    this.selectedImageFile = null;
   }
 
-  closeAddAnnouncementModal(): void {
+  openEditAnnouncementModal(annonce: AnnonceResponse): void {
+    this.showEditAnnouncementModal = true;
     this.showAddAnnouncementModal = false;
+    this.editingId = annonce.id;
+    
+    // Convertir les dates du format "jj-mm-aaaa" vers "aaaa-mm-jj" pour l'input date
+    const startDateFormatted = this.convertToInputDate(annonce.startDate);
+    const endDateFormatted = this.convertToInputDate(annonce.endDate);
+
+    this.announcementForm.patchValue({
+      title: annonce.title,
+      description: annonce.description,
+      startDate: startDateFormatted,
+      endDate: endDateFormatted,
+      startTime: annonce.startTime,
+      endTime: annonce.endTime,
+      address: annonce.address,
+      categoryId: annonce.category.id
+    });
+    this.imagePreview = this.getAnnonceImage(annonce);
+    this.selectedImageFile = null;
+  }
+
+  closeModals(): void {
+    this.showAddAnnouncementModal = false;
+    this.showEditAnnouncementModal = false;
+    this.editingId = null;
+    this.announcementForm.reset();
+    this.imagePreview = null;
+    this.selectedImageFile = null;
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      // Validation du type de fichier
+      if (!file.type.startsWith('image/')) {
+        this.error = 'Veuillez sélectionner un fichier image valide';
+        return;
+      }
+
+      // Validation de la taille (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.error = 'L\'image ne doit pas dépasser 5MB';
+        return;
+      }
+
+      this.selectedImageFile = file;
+      
+      // Créer une preview de l'image
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.imagePreview = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  /**
+   * Convertit une date du format "aaaa-mm-jj" (input date) vers "jj-mm-aaaa"
+   */
+  private convertToDisplayDate(dateString: string): string {
+    if (!dateString) return '';
+    
+    // Si la date est déjà au format "jj-mm-aaaa", on la retourne telle quelle
+    if (dateString.match(/^\d{2}-\d{2}-\d{4}$/)) {
+      return dateString;
+    }
+    
+    // Conversion depuis "aaaa-mm-jj" vers "jj-mm-aaaa"
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    
+    return dateString;
+  }
+
+  /**
+   * Convertit une date du format "jj-mm-aaaa" vers "aaaa-mm-jj" (input date)
+   */
+  private convertToInputDate(dateString: string): string {
+    if (!dateString) return '';
+    
+    // Si la date est déjà au format "aaaa-mm-jj", on la retourne telle quelle
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateString;
+    }
+    
+    // Conversion depuis "jj-mm-aaaa" vers "aaaa-mm-jj"
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    
+    return dateString;
   }
 
   onSubmit(): void {
     if (this.announcementForm.valid) {
-      const formValue = this.announcementForm.value;
-      const newAnnouncement: Annonce = {
-        id: this.annonces.length + 1,
-        titre: formValue.titre,
-        description: formValue.description,
-        categorie: formValue.categorie as Categorie,
-        statut: formValue.statut as Statut,
-        date: new Date().toLocaleDateString('fr-FR'),
-        datePublication: formValue.datePublication,
-        contenu: formValue.contenu
+      // Convertir les dates du format input ("aaaa-mm-jj") vers "jj-mm-aaaa"
+      const startDateInput = this.announcementForm.get('startDate')?.value;
+      const endDateInput = this.announcementForm.get('endDate')?.value;
+
+      const annonceData: Annonce = {
+        title: this.announcementForm.get('title')?.value.trim(),
+        description: this.announcementForm.get('description')?.value.trim(),
+        startDate: this.convertToDisplayDate(startDateInput),
+        endDate: this.convertToDisplayDate(endDateInput),
+        startTime: this.announcementForm.get('startTime')?.value,
+        endTime: this.announcementForm.get('endTime')?.value,
+        address: this.announcementForm.get('address')?.value.trim(),
+        categoryId: parseInt(this.announcementForm.get('categoryId')?.value),
+        imageFile: this.selectedImageFile || undefined
       };
 
-      this.annonces.push(newAnnouncement);
-      this.filterAnnouncements();
-      this.closeAddAnnouncementModal();
-    }
-  }
+      console.log('Données envoyées:', annonceData); // Debug
 
-  viewAnnouncement(annonce: Annonce): void {
-    console.log('View announcement:', annonce);
-  }
-
-  editAnnouncement(annonce: Annonce): void {
-    console.log('Edit announcement:', annonce);
-  }
-
-  toggleAnnouncementStatus(annonce: Annonce): void {
-    if (annonce.statut === 'Public') {
-      annonce.statut = this.currentLang === 'fr' ? 'Brouillon' : 'Draft';
+      if (this.editingId) {
+        this.updateAnnonce(this.editingId, annonceData);
+      } else {
+        this.addAnnonce(annonceData);
+      }
     } else {
-      annonce.statut = 'Public';
+      // Marquer tous les champs comme touchés pour afficher les erreurs
+      this.markFormGroupTouched(this.announcementForm);
     }
+  }
+
+  /**
+   * Marque tous les champs du formulaire comme touchés pour afficher les erreurs de validation
+   */
+  private markFormGroupTouched(formGroup: FormGroup) {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      } else {
+        control?.markAsTouched();
+      }
+    });
+  }
+
+  private addAnnonce(annonceData: Annonce): void {
+    this.loading = true;
+    
+    this.annonceService.saveAnnonce(annonceData).subscribe({
+      next: (response: AnnonceResponse) => {
+        this.closeModals();
+        this.loadAnnonces();
+        this.loading = false;
+        console.log(this.texts.announcementAdded);
+      },
+      error: (error: any) => {
+        this.error = error.message || 'Erreur lors de l\'ajout de l\'annonce';
+        this.loading = false;
+        console.error('Erreur:', error);
+      }
+    });
+  }
+
+  private updateAnnonce(id: number, annonceData: Annonce): void {
+    this.loading = true;
+    
+    this.annonceService.updateAnnonce(id, annonceData).subscribe({
+      next: (response: AnnonceResponse) => {
+        this.closeModals();
+        this.loadAnnonces();
+        this.loading = false;
+        console.log(this.texts.announcementUpdated);
+      },
+      error: (error: any) => {
+        this.error = error.message || 'Erreur lors de la modification de l\'annonce';
+        this.loading = false;
+        console.error('Erreur:', error);
+      }
+    });
+  }
+
+  viewAnnouncement(annonce: AnnonceResponse): void {
+    console.log('View announcement:', annonce);
+    // Implémenter la vue détaillée
+  }
+
+  editAnnouncement(annonce: AnnonceResponse): void {
+    this.openEditAnnouncementModal(annonce);
+  }
+
+  deleteAnnouncement(annonce: AnnonceResponse): void {
+    if (confirm(this.texts.confirmDelete)) {
+      this.loading = true;
+      
+      this.annonceService.deleteAnnonce(annonce.id).subscribe({
+        next: () => {
+          this.loadAnnonces();
+          this.loading = false;
+          console.log(this.texts.announcementDeleted);
+        },
+        error: (error: any) => {
+          this.error = error.message || 'Erreur lors de la suppression de l\'annonce';
+          this.loading = false;
+          console.error('Erreur:', error);
+        }
+      });
+    }
+  }
+
+  clearError(): void {
+    this.error = null;
+  }
+
+  // Méthode pour formater l'affichage des dates dans le tableau
+  formatDisplayDate(dateString: string): string {
+    return this.convertToDisplayDate(dateString);
   }
 }

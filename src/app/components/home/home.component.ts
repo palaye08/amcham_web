@@ -1,16 +1,36 @@
-// home.component.ts
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { HeaderComponent } from "../header/header.component";
 import { trigger, transition, style, animate } from '@angular/animations';
 import { LanguageService } from '../../../services/language.service';
+import { HomeService, AnnonceResponse, Company } from '../../../services/home.service';
+import { SecteurService, Country, SecteurResponse } from '../../../services/secteur.service';
+import { PartenaireService, Partenaire } from '../../../services/partenaire.service';
 import { Subscription } from 'rxjs';
+
+interface MembreDisplay {
+  id: number;
+  nom: string;
+  secteur: string;
+  pictures: string[];
+  pays: string;
+  statut: 'Actif' | 'Inactif' | 'En attente' | 'Active' | 'Inactive' | 'Pending';
+  date: string;
+  logo?: string;
+  adresse?: string;
+  telephone?: string;
+  email?: string;
+  siteWeb?: string;
+  countryAmcham?: string;
+  description?: string;
+}
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, HeaderComponent],
+  imports: [CommonModule, HeaderComponent, FormsModule],
   animations: [
     trigger('slideAnimation', [
       transition(':enter', [
@@ -30,6 +50,32 @@ export class HomeComponent implements OnInit, OnDestroy {
   private slideInterval: any;
   private langSubscription!: Subscription;
   currentLang = 'fr';
+  isLoading = false;
+  error: string | null = null;
+
+  // Variables de recherche
+  searchKeyword: string = '';
+  selectedCountryId: number | undefined;
+  selectedSectorId: number | undefined;
+  isSearching = false;
+  
+  // Listes pour les dropdowns
+  countries: Country[] = [];
+  sectors: SecteurResponse[] = [];
+
+  // Données dynamiques de l'API
+  totalContacts = 0;
+  totalCompanies = 0;
+  totalCountries = 0;
+  totalSectors = 0;
+  annonces: AnnonceResponse[] = [];
+  membres: MembreDisplay[] = [];
+
+  // ID du pays AMCHAM
+  countryAmchamId = 1;
+
+  partenaires: Partenaire[] = [];
+
 
   // Textes en français
   heroSlidesFr = [
@@ -95,88 +141,26 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   ];
 
-  statsFr = [
-    { number: '5 000+', label: 'Réseaux de vente', icon: 'users' },
-    { number: '1 200+', label: 'Entreprises', icon: 'building' },
-    { number: '75+', label: 'Pays représentés', icon: 'globe' },
-    { number: '12+', label: 'Années', icon: 'clock' }
-  ];
 
-  statsEn = [
-    { number: '5,000+', label: 'Sales networks', icon: 'users' },
-    { number: '1,200+', label: 'Companies', icon: 'building' },
-    { number: '75+', label: 'Countries represented', icon: 'globe' },
-    { number: '12+', label: 'Years', icon: 'clock' }
-  ];
 
-  actualitesFr = [
-    {
-      id: 1,
-      title: 'Forum économique franco-américain',
-      description: 'Participez à notre forum annuel sur les opportunités d\'affaires entre la France et les États-Unis.',
-      date: '15 Août 2024',
-      image: '/assets/forum.jpg',
-      category: 'Événement'
-    },
-    {
-      id: 2,
-      title: 'Appel à candidatures',
-      description: 'Postulez pour notre programme d\'échange professionnel de 6 mois aux États-Unis.',
-      date: '25 Septembre 2024',
-      image: '/assets/candidature.jpg',
-      category: 'Programme'
-    },
-    {
-      id: 3,
-      title: 'Nouvelles régulations commerciales',
-      description: 'Informations importantes sur les nouvelles régulations commerciales entre l\'UE et les États-Unis.',
-      date: '28 Septembre 2024',
-      image: '/assets/regulations.jpg',
-      category: 'Information'
-    }
-  ];
-
-  actualitesEn = [
-    {
-      id: 1,
-      title: 'French-American Economic Forum',
-      description: 'Participate in our annual forum on business opportunities between France and the United States.',
-      date: 'August 15, 2024',
-      image: '/assets/forum.jpg',
-      category: 'Event'
-    },
-    {
-      id: 2,
-      title: 'Call for applications',
-      description: 'Apply for our 6-month professional exchange program in the United States.',
-      date: 'September 25, 2024',
-      image: '/assets/candidature.jpg',
-      category: 'Program'
-    },
-    {
-      id: 3,
-      title: 'New trade regulations',
-      description: 'Important information about new trade regulations between the EU and the United States.',
-      date: 'September 28, 2024',
-      image: '/assets/regulations.jpg',
-      category: 'Information'
-    }
-  ];
-
-  // Getters pour les données selon la langue actuelle
   get heroSlides() {
     return this.currentLang === 'fr' ? this.heroSlidesFr : this.heroSlidesEn;
   }
 
   get stats() {
-    return this.currentLang === 'fr' ? this.statsFr : this.statsEn;
+    return this.currentLang === 'fr' ? [
+      { number: this.formatNumber(this.totalContacts), label: 'Contacts établis', icon: 'users' },
+      { number: this.formatNumber(this.totalCompanies), label: 'Entreprises', icon: 'building' },
+      { number: `${this.totalCountries}+`, label: 'Pays représentés', icon: 'globe' },
+      { number: `${this.totalSectors}+`, label: 'Secteurs d\'activités', icon: 'clock' }
+    ] : [
+      { number: this.formatNumber(this.totalContacts), label: 'Contacts established', icon: 'users' },
+      { number: this.formatNumber(this.totalCompanies), label: 'Companies', icon: 'building' },
+      { number: `${this.totalCountries}+`, label: 'Countries represented', icon: 'globe' },
+      { number: `${this.totalSectors}+`, label: 'Activity sectors', icon: 'clock' }
+    ];
   }
 
-  get actualites() {
-    return this.currentLang === 'fr' ? this.actualitesFr : this.actualitesEn;
-  }
-
-  // Textes dynamiques
   get searchTexts() {
     return this.currentLang === 'fr' ? {
       memberName: 'Nom du membre',
@@ -187,10 +171,10 @@ export class HomeComponent implements OnInit, OnDestroy {
       allSectors: 'Tous les secteurs',
       search: 'Rechercher',
       newsTitle: 'Actualités et événements',
-      seeAllNews: 'Voir toutes les actualites',
+      seeAllNews: 'Voir toutes les actualités',
       membersTitle: 'Nos membres',
       membersDesc: 'Découvrez quelques-uns de nos membres et explorez les opportunités de collaboration',
-      membersDisplayed: '6 membres affichés',
+      membersDisplayed: 'membres affichés',
       contact: 'Contacter',
       viewProfile: 'Voir la fiche',
       seeAllMembers: 'Voir tous les membres',
@@ -203,7 +187,10 @@ export class HomeComponent implements OnInit, OnDestroy {
       download: 'Télécharger sur',
       appStore: 'App Store',
       googlePlay: 'Google Play',
-      partnersTitle: 'Nos partenaires'
+      partnersTitle: 'Nos partenaires',
+      loading: 'Chargement...',
+      noAnnouncements: 'Aucune annonce disponible',
+      noMembers: 'Aucun membre disponible'
     } : {
       memberName: 'Member name',
       memberPlaceholder: 'E.S. Amcham SN',
@@ -216,7 +203,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       seeAllNews: 'See all news',
       membersTitle: 'Our members',
       membersDesc: 'Discover some of our members and explore collaboration opportunities',
-      membersDisplayed: '6 members displayed',
+      membersDisplayed: 'members displayed',
       contact: 'Contact',
       viewProfile: 'View profile',
       seeAllMembers: 'See all members',
@@ -229,46 +216,54 @@ export class HomeComponent implements OnInit, OnDestroy {
       download: 'Download on',
       appStore: 'App Store',
       googlePlay: 'Google Play',
-      partnersTitle: 'Our partners'
+      partnersTitle: 'Our partners',
+      loading: 'Loading...',
+      noAnnouncements: 'No announcements available',
+      noMembers: 'No members available'
     };
   }
 
-  membres = [
-    {
-      id: 1,
-      name: 'Global Tech Solutions',
-      categoryFr: 'Technologie',
-      categoryEn: 'Technology',
-      locationFr: 'Boston, États-Unis',
-      locationEn: 'Boston, USA',
-      logo: '/assets/logo1.jpg',
-      descriptionFr: 'Solutions technologiques innovantes',
-      descriptionEn: 'Innovative technology solutions'
-    },
-    // ... autres membres avec traductions
-  ];
-
-  partenaires = [
-    { name: 'US Embassy', logo: '/assets/embassy.jpg' },
-    { name: 'Ministère de l\'Education', logo: '/assets/ministry.jpg' },
-    { name: 'Coca-Cola', logo: '/assets/cocacola.jpg' }
-  ];
-
   constructor(
     private router: Router,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private homeService: HomeService,
+    private secteurService: SecteurService,
+    private partenaireService: PartenaireService 
+
   ) { }
 
   ngOnInit(): void {
     this.startSlideShow();
     
-    // S'abonner aux changements de langue
     this.langSubscription = this.languageService.currentLang$.subscribe(lang => {
       this.currentLang = lang;
+      this.updateMembresLanguage();
     });
     
-    // Initialiser la langue
     this.currentLang = this.languageService.getCurrentLanguage();
+    this.loadHomeData();
+    this.loadCountriesAndSectors();
+    this.loadPartners(); // Ajouter cette ligne
+  }
+// Dans home.component.ts
+getLogoUrl(logoPath: string): string {
+  return this.partenaireService.getLogoUrl(logoPath);
+}
+  loadPartners(): void {
+    this.partenaireService.getPartners().subscribe({
+      next: (partenaires) => {
+        this.partenaires = partenaires;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des partenaires:', error);
+        // Garder les partenaires par défaut en cas d'erreur
+        this.partenaires = [
+          { id: 1, name: 'US Embassy', logo: '/assets/embassy.jpg', link: '#' },
+          { id: 2, name: 'Ministère de l\'Education', logo: '/assets/ministry.jpg', link: '#' },
+          { id: 3, name: 'Coca-Cola', logo: '/assets/cocacola.jpg', link: '#' }
+        ];
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -278,6 +273,278 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.langSubscription) {
       this.langSubscription.unsubscribe();
     }
+  }
+
+  /**
+   * Charger les pays et secteurs pour les dropdowns
+   */
+  loadCountriesAndSectors(): void {
+    // Charger les pays depuis SecteurService
+    this.secteurService.getCountries().subscribe({
+      next: (countries) => {
+        this.countries = countries;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des pays:', error);
+      }
+    });
+
+    // Charger les secteurs depuis SecteurService
+    this.secteurService.getAllSecteurs().subscribe({
+      next: (sectors) => {
+        this.sectors = sectors;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des secteurs:', error);
+      }
+    });
+  }
+
+  /**
+   * Méthode de recherche
+   */
+  rechercher(): void {
+    this.isSearching = true;
+    this.error = null;
+
+    // Construire les paramètres de recherche
+    const searchParams: any = {
+      page: 0,
+      size: 6
+    };
+
+    // Ajouter le nom si renseigné
+    if (this.searchKeyword && this.searchKeyword.trim()) {
+      searchParams.name = this.searchKeyword.trim();
+    }
+
+    // Ajouter le secteur si sélectionné
+    if (this.selectedSectorId) {
+      // Récupérer le nom du secteur sélectionné
+      const selectedSector = this.sectors.find(s => s.id === this.selectedSectorId);
+      if (selectedSector) {
+        searchParams.sector = this.currentLang === 'fr' ? selectedSector.nameFr : selectedSector.nameEn;
+      }
+    }
+
+    // Utiliser la méthode getMembres du HomeService pour la recherche
+    this.homeService.getMembres(this.countryAmchamId, searchParams).subscribe({
+      next: (response) => {
+        // Convertir les résultats en MembreDisplay
+        this.membres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
+        
+        // Mettre à jour le nombre total de résultats
+        this.totalCompanies = response.totalElements;
+        
+        this.isSearching = false;
+
+        // Si des résultats sont trouvés, scroller vers la section membres
+        if (this.membres.length > 0) {
+          setTimeout(() => {
+            const membresSection = document.querySelector('.membres-section');
+            if (membresSection) {
+              membresSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
+        }
+      },
+      error: (error) => {
+        console.error('Erreur lors de la recherche:', error);
+        this.error = this.currentLang === 'fr' 
+          ? 'Une erreur est survenue lors de la recherche. Veuillez réessayer.' 
+          : 'An error occurred during the search. Please try again.';
+        this.isSearching = false;
+      }
+    });
+  }
+
+  /**
+   * Réinitialiser la recherche
+   */
+  resetSearch(): void {
+    this.searchKeyword = '';
+    this.selectedCountryId = undefined;
+    this.selectedSectorId = undefined;
+    this.loadMembres(); // Recharger tous les membres
+  }
+
+  /**
+   * Charger toutes les données de la page d'accueil
+   */
+  loadHomeData(): void {
+    this.isLoading = true;
+    this.error = null;
+
+    this.loadStats();
+    this.loadAnnonces();
+    this.loadMembres();
+  }
+
+  loadStats(): void {
+    this.homeService.getContacts().subscribe({
+      next: (data) => {
+        this.totalContacts = data;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des contacts:', error);
+      }
+    });
+
+    this.homeService.getCompanies().subscribe({
+      next: (data) => {
+        this.totalCompanies = data.totalCompanies;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des entreprises:', error);
+      }
+    });
+
+    this.homeService.getSectors().subscribe({
+      next: (data) => {
+        this.totalSectors = data;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des secteurs:', error);
+      }
+    });
+  }
+
+  loadAnnonces(): void {
+    this.homeService.getAnnonces({ page: 0, size: 3 }).subscribe({
+      next: (response) => {
+        this.annonces = response.content;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des annonces:', error);
+      }
+    });
+  }
+
+  loadMembres(): void {
+    this.homeService.getMembres(this.countryAmchamId, { 
+      page: 0, 
+      size: 6 
+    }).subscribe({
+      next: (response) => {
+        this.membres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
+        
+        const uniqueCountries = [...new Set(response.content.map(membre => membre.country))];
+        this.totalCountries = uniqueCountries.length;
+        
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des membres:', error);
+        this.error = error.message;
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private mapCompanyToMembreDisplay(company: Company): MembreDisplay {
+    return {
+      id: company.id,
+      nom: company.name,
+      secteur: company.sector,
+      pays: company.country,
+      statut: 'Actif',
+      date: this.formatDateForDisplay(new Date()),
+      pictures: company.pictures || [],
+      logo: company.pictures?.[0],
+      adresse: company.address,
+      telephone: company.telephone,
+      email: company.email,
+      siteWeb: company.webLink,
+      countryAmcham: company.countryAmcham,
+      description: company.description
+    };
+  }
+
+  private updateMembresLanguage(): void {
+    this.membres = this.membres.map(membre => ({
+      ...membre,
+      secteur: this.translateSector(membre.secteur),
+      pays: this.translateCountry(membre.pays),
+      statut: this.translateStatus(membre.statut)
+    }));
+  }
+
+  private translateSector(sector: string): string {
+    const sectorMap = this.currentLang === 'fr' ? {
+      'Technology': 'Technologie',
+      'Finance': 'Finance',
+      'Health': 'Santé',
+      'Education': 'Éducation'
+    } : {
+      'Technologie': 'Technology',
+      'Finance': 'Finance',
+      'Santé': 'Health',
+      'Éducation': 'Education'
+    };
+    return sectorMap[sector as keyof typeof sectorMap] || sector;
+  }
+
+  private translateCountry(country: string): string {
+    const countryMap = this.currentLang === 'fr' ? {
+      'United States': 'États-Unis',
+      'France': 'France',
+      'Canada': 'Canada',
+      'United Kingdom': 'Royaume-Uni'
+    } : {
+      'États-Unis': 'United States',
+      'France': 'France',
+      'Canada': 'Canada',
+      'Royaume-Uni': 'United Kingdom'
+    };
+    return countryMap[country as keyof typeof countryMap] || country;
+  }
+
+  private translateStatus(status: string): any {
+    const statusMap = this.currentLang === 'fr' ? {
+      'Active': 'Actif',
+      'Inactive': 'Inactif',
+      'Pending': 'En attente'
+    } : {
+      'Actif': 'Active',
+      'Inactif': 'Inactive',
+      'En attente': 'Pending'
+    };
+    return statusMap[status as keyof typeof statusMap] || status;
+  }
+
+  private formatDateForDisplay(date: Date): string {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+
+  formatNumber(num: number): string {
+    if (num >= 1000) {
+      return num.toLocaleString(this.currentLang === 'fr' ? 'fr-FR' : 'en-US') + '+';
+    }
+    return num.toString();
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(this.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  getCategoryName(annonce: AnnonceResponse): string {
+    return this.currentLang === 'fr' ? annonce.category.nameFr : annonce.category.nameEn;
+  }
+
+  getSectorName(sector: SecteurResponse): string {
+    return this.currentLang === 'fr' ? sector.nameFr : sector.nameEn;
+  }
+
+  getInitial(name: string): string {
+    return name.charAt(0).toUpperCase();
   }
 
   startSlideShow(): void {
@@ -308,9 +575,5 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   voirToutesActualites() {
     this.router.navigate(['/actualites']);
-  }
-
-  rechercher() {
-    console.log('Recherche en cours...');
   }
 }

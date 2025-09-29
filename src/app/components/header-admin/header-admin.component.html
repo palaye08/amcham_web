@@ -1,120 +1,120 @@
 <!-- Header supérieur bleu -->
 <header class="bg-[#1D365D] text-white px-6 py-2">
-  <div class="flex items-center justify-between">
-    <!-- Logo à gauche -->
-    <div class="flex items-center">
-      <h1 class="text-lg font-medium">{{ texts.platformTitle }}</h1>
-    </div>
-    
-    <div class="flex items-center">
-      <!-- Sélecteur de langue -->
-      <div class="language-selector relative">
-        <button 
-          (click)="toggleLanguagePopup()"
-          class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-[#2a4a7a] transition-colors duration-200 cursor-pointer"
-        >
-          <img [src]="currentLanguage.flag" [alt]="currentLanguage.code" class="w-5 h-4">
-          <span class="text-sm">{{ currentLanguage.code }}</span>
-          <svg class="w-4 h-4 transition-transform duration-200" 
-               [class.rotate-180]="showLanguagePopup"
-               fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-          </svg>
-        </button>
-        
-        <!-- Popup de sélection de langue -->
-        <div 
-          *ngIf="showLanguagePopup" 
-          class="absolute top-full right-0 mt-1 w-64 bg-gradient-to-b from-[#4a5a7a] to-[#2a3a5a] rounded-lg shadow-lg overflow-hidden z-50">
-          <div class="p-4">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-white font-medium">{{ texts.changeLanguage }}</h3>
-              <button 
-                (click)="toggleLanguagePopup()" 
-                class="text-gray-300 hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            
-            <!-- Option Français -->
-            <div 
-              (click)="selectLanguage('fr')" 
-              class="flex items-center justify-between p-3 rounded-lg mb-2 cursor-pointer hover:bg-black/20 transition-colors"
-              [class.border-2]="currentLanguage.code === 'FR'"
-              [class.border-red-500]="currentLanguage.code === 'FR'">
-              <div class="flex items-center space-x-3">
-                <img src="https://flagcdn.com/w20/fr.png" alt="Français" class="w-5 h-5 rounded-sm">
-                <span class="text-white">{{ texts.french }}</span>
+    <div class="flex items-center justify-between">
+      <!-- Logo à gauche -->
+      <div class="flex items-center">
+        <h1 class="text-lg font-medium">{{ texts.platformTitle }}</h1>
+      </div>
+      
+      <div class="flex items-center">
+        <!-- Sélecteur de langue -->
+        <div class="language-selector relative">
+          <button 
+            (click)="toggleLanguagePopup()"
+            class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-[#2a4a7a] transition-colors duration-200 cursor-pointer"
+          >
+            <img [src]="currentLanguage.flag" [alt]="currentLanguage.code" class="w-5 h-4">
+            <span class="text-sm">{{ currentLanguage.code }}</span>
+            <svg class="w-4 h-4 transition-transform duration-200" 
+                 [class.rotate-180]="showLanguagePopup"
+                 fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+          
+          <!-- Popup de sélection de langue -->
+          <div 
+            *ngIf="showLanguagePopup" 
+            class="absolute top-full right-0 mt-1 w-64 bg-gradient-to-b from-[#4a5a7a] to-[#2a3a5a] rounded-lg shadow-lg overflow-hidden z-50">
+            <div class="p-4">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="text-white font-medium">{{ texts.changeLanguage }}</h3>
+                <button 
+                  (click)="toggleLanguagePopup()" 
+                  class="text-gray-300 hover:text-white">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
               </div>
+              
+              <!-- Option Français -->
               <div 
-                *ngIf="currentLanguage.code === 'FR'" 
-                class="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
+                (click)="selectLanguage('fr')" 
+                class="flex items-center justify-between p-3 rounded-lg mb-2 cursor-pointer hover:bg-black/20 transition-colors"
+                [class.border-2]="currentLanguage.code === 'FR'"
+                [class.border-red-500]="currentLanguage.code === 'FR'">
+                <div class="flex items-center space-x-3">
+                  <img src="https://flagcdn.com/w20/fr.png" alt="Français" class="w-5 h-5 rounded-sm">
+                  <span class="text-white">{{ texts.french }}</span>
+                </div>
+                <div 
+                  *ngIf="currentLanguage.code === 'FR'" 
+                  class="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
               </div>
-            </div>
-            
-            <!-- Option Anglais -->
-            <div 
-              (click)="selectLanguage('en')" 
-              class="flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-black/20 transition-colors"
-              [class.border-2]="currentLanguage.code === 'EN'"
-              [class.border-red-500]="currentLanguage.code === 'EN'">
-              <div class="flex items-center space-x-3">
-                <img src="https://flagcdn.com/w20/gb.png" alt="English" class="w-5 h-5 rounded-sm">
-                <span class="text-white">{{ texts.english }}</span>
-              </div>
+              
+              <!-- Option Anglais -->
               <div 
-                *ngIf="currentLanguage.code === 'EN'" 
-                class="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
+                (click)="selectLanguage('en')" 
+                class="flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-black/20 transition-colors"
+                [class.border-2]="currentLanguage.code === 'EN'"
+                [class.border-red-500]="currentLanguage.code === 'EN'">
+                <div class="flex items-center space-x-3">
+                  <img src="https://flagcdn.com/w20/gb.png" alt="English" class="w-5 h-5 rounded-sm">
+                  <span class="text-white">{{ texts.english }}</span>
+                </div>
+                <div 
+                  *ngIf="currentLanguage.code === 'EN'" 
+                  class="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+    
+    <!-- Overlay pour fermer la popup en cliquant à l'extérieur -->
+    <div *ngIf="showLanguagePopup" 
+         (click)="showLanguagePopup = false"
+         class="fixed inset-0 z-40 bg-transparent"></div>
+  </header>
   
-  <!-- Overlay pour fermer la popup en cliquant à l'extérieur -->
-  <div *ngIf="showLanguagePopup" 
-       (click)="showLanguagePopup = false"
-       class="fixed inset-0 z-40 bg-transparent"></div>
-</header>
-
-<!-- Partie inférieure avec navigation admin -->
-<div class="bg-white shadow-sm border-b">
-    
-  <div class="max-w-7xl mx-auto px-6">
-    
-    <!-- Navigation admin -->
-    <div class="flex items-center justify-between py-4">
-      <img src="/assets/logo.png" alt="AMCHAM" class="h-10 mr-2 h-19 w-18 relative right-40">
-
-      <nav class="flex space-x-8">
-        <a 
-          [routerLink]="['/admin/members']"                         
-          (click)="navigateToMembers()" 
-
-          class="flex items-center px-3 py-2 cursor-pointer transition-colors duration-200"
-          [class.text-red-600]="isActiveRoute('/members')"
-          [class.border-b-2]="isActiveRoute('/members')"
-          [class.border-red-600]="isActiveRoute('/members')"
-          [class.font-medium]="isActiveRoute('/members')"
-          [class.text-gray-600]="!isActiveRoute('/members')"
-          [class.hover:text-gray-900]="!isActiveRoute('/members')">
-          <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13.57 10.41C14.1774 9.5613 14.5041 8.54375 14.5041 7.50004C14.5041 6.45632 14.1774 5.43877 13.57 4.59004C14.1388 4.20257 14.8118 3.99684 15.5 4.00004C16.4283 4.00004 17.3185 4.36879 17.9749 5.02516C18.6313 5.68154 19 6.57178 19 7.50004C19 8.42829 18.6313 9.31853 17.9749 9.97491C17.3185 10.6313 16.4283 11 15.5 11C14.8118 11.0032 14.1388 10.7975 13.57 10.41ZM6 7.50004C6 6.8078 6.20527 6.13111 6.58986 5.55554C6.97444 4.97997 7.52107 4.53137 8.16061 4.26646C8.80015 4.00155 9.50388 3.93224 10.1828 4.06729C10.8617 4.20234 11.4854 4.53568 11.9749 5.02516C12.4644 5.51465 12.7977 6.13829 12.9327 6.81722C13.0678 7.49615 12.9985 8.19989 12.7336 8.83943C12.4687 9.47897 12.0201 10.0256 11.4445 10.4102C10.8689 10.7948 10.1922 11 9.5 11C8.57174 11 7.6815 10.6313 7.02513 9.97491C6.36875 9.31853 6 8.42829 6 7.50004ZM8 7.50004C8 7.79671 8.08797 8.08672 8.2528 8.33339C8.41762 8.58007 8.65189 8.77232 8.92597 8.88586C9.20006 8.99939 9.50166 9.02909 9.79264 8.97121C10.0836 8.91334 10.3509 8.77048 10.5607 8.5607C10.7704 8.35092 10.9133 8.08364 10.9712 7.79267C11.0291 7.5017 10.9994 7.2001 10.8858 6.92601C10.7723 6.65192 10.58 6.41765 10.3334 6.25283C10.0867 6.08801 9.79667 6.00004 9.5 6.00004C9.10218 6.00004 8.72064 6.15807 8.43934 6.43938C8.15804 6.72068 8 7.10221 8 7.50004ZM16.5 17V19H2.5V17C2.5 17 2.5 13 9.5 13C16.5 13 16.5 17 16.5 17ZM14.5 17C14.36 16.22 13.17 15 9.5 15C5.83 15 4.57 16.31 4.5 17M16.45 13C17.0629 13.4768 17.564 14.0819 17.9182 14.7729C18.2723 15.4639 18.4709 16.2241 18.5 17V19H22.5V17C22.5 17 22.5 13.37 16.44 13H16.45Z" fill="#252525"/>
+  <!-- Partie inférieure avec navigation admin -->
+  <div class="bg-white shadow-sm border-b">
+      
+    <div class="max-w-7xl mx-auto px-6">
+      
+      <!-- Navigation admin -->
+      <div class="flex items-center justify-between py-4">
+        <img src="/assets/logo.png" alt="AMCHAM" class="h-10 mr-2 h-19 w-18 relative right-40">
+  
+        <nav class="flex space-x-8">
+          <!-- Vos liens de navigation existants -->
+          <a 
+            [routerLink]="['/admin/members']"                         
+            (click)="navigateToMembers()" 
+            class="flex items-center px-3 py-2 cursor-pointer transition-colors duration-200"
+            [class.text-red-600]="isActiveRoute('/members')"
+            [class.border-b-2]="isActiveRoute('/members')"
+            [class.border-red-600]="isActiveRoute('/members')"
+            [class.font-medium]="isActiveRoute('/members')"
+            [class.text-gray-600]="!isActiveRoute('/members')"
+            [class.hover:text-gray-900]="!isActiveRoute('/members')">
+            <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13.57 10.41C14.1774 9.5613 14.5041 8.54375 14.5041 7.50004C14.5041 6.45632 14.1774 5.43877 13.57 4.59004C14.1388 4.20257 14.8118 3.99684 15.5 4.00004C16.4283 4.00004 17.3185 4.36879 17.9749 5.02516C18.6313 5.68154 19 6.57178 19 7.50004C19 8.42829 18.6313 9.31853 17.9749 9.97491C17.3185 10.6313 16.4283 11 15.5 11C14.8118 11.0032 14.1388 10.7975 13.57 10.41ZM6 7.50004C6 6.8078 6.20527 6.13111 6.58986 5.55554C6.97444 4.97997 7.52107 4.53137 8.16061 4.26646C8.80015 4.00155 9.50388 3.93224 10.1828 4.06729C10.8617 4.20234 11.4854 4.53568 11.9749 5.02516C12.4644 5.51465 12.7977 6.13829 12.9327 6.81722C13.0678 7.49615 12.9985 8.19989 12.7336 8.83943C12.4687 9.47897 12.0201 10.0256 11.4445 10.4102C10.8689 10.7948 10.1922 11 9.5 11C8.57174 11 7.6815 10.6313 7.02513 9.97491C6.36875 9.31853 6 8.42829 6 7.50004ZM8 7.50004C8 7.79671 8.08797 8.08672 8.2528 8.33339C8.41762 8.58007 8.65189 8.77232 8.92597 8.88586C9.20006 8.99939 9.50166 9.02909 9.79264 8.97121C10.0836 8.91334 10.3509 8.77048 10.5607 8.5607C10.7704 8.35092 10.9133 8.08364 10.9712 7.79267C11.0291 7.5017 10.9994 7.2001 10.8858 6.92601C10.7723 6.65192 10.58 6.41765 10.3334 6.25283C10.0867 6.08801 9.79667 6.00004 9.5 6.00004C9.10218 6.00004 8.72064 6.15807 8.43934 6.43938C8.15804 6.72068 8 7.10221 8 7.50004ZM16.5 17V19H2.5V17C2.5 17 2.5 13 9.5 13C16.5 13 16.5 17 16.5 17ZM14.5 17C14.36 16.22 13.17 15 9.5 15C5.83 15 4.57 16.31 4.5 17M16.45 13C17.0629 13.4768 17.564 14.0819 17.9182 14.7729C18.2723 15.4639 18.4709 16.2241 18.5 17V19H22.5V17C22.5 17 22.5 13.37 16.44 13H16.45Z" fill="#252525"/>
             </svg>            
-          {{ texts.members }}
-        </a>
-        
-        <a 
+            {{ texts.members }}
+          </a>
+          
+          <a 
           [routerLink]="['/admin/banners']" 
           (click)="navigateToBanniere()" 
           class="flex items-center px-3 py-2 cursor-pointer transition-colors duration-200"
@@ -194,25 +194,67 @@
           {{ texts.amcham }}
         </a>
         
-    
-      </nav>
-      
-      <!-- Info utilisateur/admin -->
-      <div class="flex items-center">
-        <div class="w-10 h-10 bg-blue-100    rounded-full flex items-center justify-center mr-3">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          
+        </nav>
+        
+        <!-- Info utilisateur/admin -->
+        <div class="flex items-center space-x-4">
+          <!-- Bouton Paramètres avec dropdown -->
+          <div class="relative">
+            <div 
+              (click)="toggleSettingsDropdown()"
+              class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3 cursor-pointer hover:bg-blue-200 transition-colors duration-200"
+              [class.bg-blue-200]="showSettingsDropdown">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M7.05039 6.4621C7.32255 6.5579 7.61221 6.59368 7.89949 6.56698C8.18678 6.54029 8.46489 6.45175 8.71473 6.30745C8.96458 6.16315 9.18024 5.9665 9.34693 5.73099C9.51361 5.49549 9.62737 5.22671 9.68039 4.9431L10.0004 3.2231C11.3162 2.92336 12.6826 2.92336 13.9984 3.2231L14.3204 4.9431C14.3734 5.22671 14.4872 5.49549 14.6539 5.73099C14.8205 5.9665 15.0362 6.16315 15.286 6.30745C15.5359 6.45175 15.814 6.54029 16.1013 6.56698C16.3886 6.59368 16.6782 6.5579 16.9504 6.4621L18.5994 5.8821C19.5173 6.87087 20.2012 8.05336 20.6004 9.3421L19.2704 10.4821C19.0513 10.6699 18.8755 10.9028 18.755 11.1649C18.6344 11.427 18.572 11.7121 18.572 12.0006C18.572 12.2891 18.6344 12.5742 18.755 12.8363C18.8755 13.0984 19.0513 13.3313 19.2704 13.5191L20.6004 14.6581C20.2012 15.9468 19.5173 17.1293 18.5994 18.1181L16.9494 17.5381C16.6772 17.4423 16.3876 17.4065 16.1003 17.4332C15.813 17.4599 15.5349 17.5484 15.285 17.6927C15.0352 17.837 14.8195 18.0337 14.6529 18.2692C14.4862 18.5047 14.3724 18.7735 14.3194 19.0571L14.0004 20.7771C12.6846 21.0768 11.3182 21.0768 10.0024 20.7771L9.68039 19.0571C9.62737 18.7735 9.51361 18.5047 9.34693 18.2692C9.18024 18.0337 8.96458 17.837 8.71473 17.6927C8.46489 17.5484 8.18678 17.4599 7.89949 17.4332C7.61221 17.4065 7.32255 17.4423 7.05039 17.5381L5.40139 18.1181C4.48348 17.1293 3.79962 15.9468 3.40039 14.6581L4.73039 13.5181C4.94927 13.3303 5.12495 13.0975 5.2454 12.8355C5.36585 12.5734 5.42821 12.2885 5.42821 12.0001C5.42821 11.7117 5.36585 11.4268 5.2454 11.1647C5.12495 10.9027 4.94927 10.6699 4.73039 10.4821L3.40039 9.3421C3.79933 8.05345 4.48284 6.87097 5.40039 5.8821L7.05039 6.4621ZM12.0004 9.0001C12.796 9.0001 13.5591 9.31617 14.1217 9.87878C14.6843 10.4414 15.0004 11.2044 15.0004 12.0001C15.0004 12.7957 14.6843 13.5588 14.1217 14.1214C13.5591 14.684 12.796 15.0001 12.0004 15.0001C11.2047 15.0001 10.4417 14.684 9.87907 14.1214C9.31646 13.5588 9.00039 12.7957 9.00039 12.0001C9.00039 11.2044 9.31646 10.4414 9.87907 9.87878C10.4417 9.31617 11.2047 9.0001 12.0004 9.0001Z" stroke="#252525" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+              </svg>    
+            </div>
+            
+            <!-- Dropdown Paramètres -->
+            <div 
+              *ngIf="showSettingsDropdown" 
+              class="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+              <div class="p-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ texts.parameters }}</h3>
                 
-        </div>
-        <div class="w-10 h-10 bg-blue-100    rounded-full flex items-center justify-center mr-3">
+                <!-- Gestion des secteurs d'activités -->
+                <div 
+                  (click)="navigateToSectors(); showSettingsDropdown = false"
+                  class="flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200 mb-2">
+            
+                  <div>
+                    <h4 class="font-medium text-gray-900">{{ texts.sectorsManagement }}</h4>
+                  </div>
+                </div>
+                
+                <!-- Gestion des catégories -->
+                <div 
+                  (click)="navigateToCategories(); showSettingsDropdown = false"
+                  class="flex items-center p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200">
+           
+                  <div>
+                    <h4 class="font-medium text-gray-900">{{ texts.categoriesManagement }}</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Avatar utilisateur -->
+          <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
             <img class="h-10 w-10 rounded-[50%]" src="" alt="CG">
           </div>
-        <div>
-          <h2 class="font-semibold text-gray-900">Administrateur</h2>
-          <p class="text-sm text-gray-500">AmCham Platform</p>
+          
+          <div>
+            <h2 class="font-semibold text-gray-900">Administrateur</h2>
+            <p class="text-sm text-gray-500">AmCham Platform</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+  
+  <!-- Overlay pour fermer le dropdown en cliquant à l'extérieur -->
+  <div *ngIf="showSettingsDropdown" 
+       (click)="showSettingsDropdown = false"
+       class="fixed inset-0 z-40 bg-transparent"></div>
