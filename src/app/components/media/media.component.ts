@@ -5,6 +5,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { HeaderMembreComponent } from "../header-membre/header-membre.component";
 import { LanguageService } from '../../../services/language.service';
+import { CompanyService, Company } from '../../../services/company.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -15,12 +16,15 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./media.component.css']
 })
 export class MediaComponent implements OnInit, OnDestroy {
-  photos: string[] = [
-    '/assets/photos/team-meeting.jpg',
-    '/assets/photos/workspace.jpg'
-  ];
+  // Données dynamiques de l'entreprise
+  companyData: Company | null = null;
+  isLoading = true;
+  errorMessage = '';
   
-  videoUrl: string = 'https://www.youtube.com/embed/dQw4w9WgXcQ0';
+  // Photos et vidéo chargées depuis l'API
+  photos: string[] = [];
+  videoUrl: string = '';
+  
   currentRoute: string;
   private langSubscription!: Subscription;
   currentLang = 'fr';
@@ -57,7 +61,9 @@ export class MediaComponent implements OnInit, OnDestroy {
       companyAddress: '123 Innovation Street, Boston, MA 02110',
       companyPhone: '+1 555-123-4567',
       companyWebsite: 'www.exemple.us',
-      profilePreview: 'Aperçu du profil public'
+      profilePreview: 'Aperçu du profil public',
+      loading: 'Chargement des médias...',
+      errorLoading: 'Erreur lors du chargement des médias'
     } : {
       galleryTitle: 'Photo Gallery',
       galleryDescription: 'Add photos of your company, products or services to showcase them on your profile.',
@@ -88,24 +94,9 @@ export class MediaComponent implements OnInit, OnDestroy {
       companyAddress: '123 Innovation Street, Boston, MA 02110',
       companyPhone: '+1 555-123-4567',
       companyWebsite: 'www.example.us',
-      profilePreview: 'Public profile preview'
-    };
-  }
-
-  // Données de l'entreprise avec traductions
-  get companyData() {
-    return this.currentLang === 'fr' ? {
-      name: 'Global Tech Solutions',
-      sector: 'Finance',
-      address: '123 Innovation Street, Boston, MA 02110',
-      phone: '+1 555-123-4567',
-      website: 'www.exemple.us'
-    } : {
-      name: 'Global Tech Solutions',
-      sector: 'Finance',
-      address: '123 Innovation Street, Boston, MA 02110',
-      phone: '+1 555-123-4567',
-      website: 'www.example.us'
+      profilePreview: 'Public profile preview',
+      loading: 'Loading media...',
+      errorLoading: 'Error loading media'
     };
   }
 
@@ -113,7 +104,8 @@ export class MediaComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private router: Router,
     private sanitizer: DomSanitizer,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private companyService: CompanyService
   ) {
     this.currentRoute = this.router.url;
   }
@@ -126,12 +118,50 @@ export class MediaComponent implements OnInit, OnDestroy {
     
     // Initialiser la langue
     this.currentLang = this.languageService.getCurrentLanguage();
+    
+    // Charger les données de l'entreprise
+    this.loadCompanyData();
   }
 
   ngOnDestroy(): void {
     if (this.langSubscription) {
       this.langSubscription.unsubscribe();
     }
+  }
+
+  /**
+   * Charger les données de l'entreprise depuis l'API
+   */
+  private loadCompanyData(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    console.log('🔍 [Media] Chargement de l\'entreprise avec ID fixe: 1');
+
+    // ✅ Appel direct avec companyId = 1
+    this.companyService.getCompanyById(1).subscribe({
+      next: (company: Company) => {
+        console.log('✅ [Media] Entreprise chargée:', company);
+        this.companyData = company;
+        
+        // Charger les photos depuis les pictures de l'entreprise
+        if (company.pictures && company.pictures.length > 0) {
+          this.photos = company.pictures;
+        }
+        
+        // Charger l'URL de la vidéo
+        if (company.videoLink) {
+          this.videoUrl = company.videoLink;
+        }
+        
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('❌ [Media] Erreur chargement entreprise:', error);
+        this.errorMessage = this.texts.errorLoading;
+        this.isLoading = false;
+      }
+    });
   }
 
   onPhotoSelected(event: any) {

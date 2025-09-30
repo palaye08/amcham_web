@@ -3,6 +3,7 @@ import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } fr
 import { Router } from '@angular/router';
 import { HeaderAdminComponent } from "../header-admin/header-admin.component";
 import { LanguageService } from '../../../services/language.service';
+import { CompanySectorService, SectorKPI } from '../../../services/company-sector.service';
 import { Subscription } from 'rxjs';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { CardStateComponent } from "../card-state/card-state.component";
@@ -57,14 +58,10 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     { term: 'Commerce', count: 60 }
   ];
 
-  sectorData = {
-    technologie: { count: 42, percentage: 33 },
-    finance: { count: 28, percentage: 22 },
-    sante: { count: 19, percentage: 15 },
-    education: { count: 14, percentage: 11 },
-    industrie: { count: 13, percentage: 10 },
-    commerce: { count: 10, percentage: 9 }
-  };
+  // Données dynamiques pour les secteurs
+  sectorData: SectorKPI[] = [];
+  isLoadingSectors = true;
+  sectorError = '';
 
   bannerClicksData = [
     { name: 'Conférence annuelle', clicks: 135 },
@@ -99,7 +96,9 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
       techConference: 'Tech Conference',
       paris: 'Paris',
       unitedStates: 'États-Unis',
-      innovation: 'Innovation'
+      innovation: 'Innovation',
+      loading: 'Chargement des données...',
+      errorLoading: 'Erreur lors du chargement des données'
     } : {
       statistics: 'Statistics',
       followPerformance: 'Track performance',
@@ -124,13 +123,16 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
       techConference: 'Tech Conference',
       paris: 'Paris',
       unitedStates: 'United States',
-      innovation: 'Innovation'
+      innovation: 'Innovation',
+      loading: 'Loading data...',
+      errorLoading: 'Error loading data'
     };
   }
 
   constructor(
     private router: Router,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    public companySectorService: CompanySectorService
   ) {
     this.currentRoute = this.router.url;
   }
@@ -142,6 +144,9 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     });
     
     this.currentLang = this.languageService.getCurrentLanguage();
+    
+    // Charger les données des secteurs
+    this.loadSectorData();
   }
 
   ngAfterViewInit(): void {
@@ -161,6 +166,31 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     // Détruire tous les graphiques
     this.chartInstances.forEach(chart => {
       chart.destroy();
+    });
+  }
+
+  /**
+   * Charger les données des secteurs depuis l'API
+   */
+  private loadSectorData(): void {
+    this.isLoadingSectors = true;
+    this.sectorError = '';
+
+    this.companySectorService.getCompanyBySector().subscribe({
+      next: (data) => {
+        this.sectorData = this.companySectorService.sortSectorsByPercentage(data);
+        this.isLoadingSectors = false;
+        
+        // Recréer le graphique des secteurs avec les nouvelles données
+        setTimeout(() => {
+          this.updateSectorsChart();
+        }, 100);
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des données des secteurs:', error);
+        this.sectorError = this.texts.errorLoading;
+        this.isLoadingSectors = false;
+      }
     });
   }
 
@@ -226,33 +256,52 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     const ctx = this.sectorsChart.nativeElement.getContext('2d');
     if (!ctx) return;
 
-    const sectorLabels = this.currentLang === 'fr' 
-      ? ['Technologie', 'Finance', 'Santé', 'Éducation', 'Industrie', 'Commerce']
-      : ['Technology', 'Finance', 'Health', 'Education', 'Industry', 'Commerce'];
+    // Si les données ne sont pas encore chargées, créer un graphique vide
+    if (this.isLoadingSectors || this.sectorData.length === 0) {
+      this.createEmptySectorsChart(ctx);
+      return;
+    }
 
+    this.createDynamicSectorsChart(ctx);
+  }
+
+  private createEmptySectorsChart(ctx: CanvasRenderingContext2D): void {
     const chart = new Chart(ctx, {
       type: 'pie',
       data: {
-        labels: sectorLabels,
+        labels: [this.texts.loading],
         datasets: [{
-          data: [
-            this.sectorData.technologie.percentage,
-            this.sectorData.finance.percentage,
-            this.sectorData.sante.percentage,
-            this.sectorData.education.percentage,
-            this.sectorData.industrie.percentage,
-            this.sectorData.commerce.percentage
-          ],
-          backgroundColor: [
-            '#3B82F6', // Technologie - Bleu
-            '#10B981', // Finance - Vert
-            '#F59E0B', // Santé - Orange
-            '#EF4444', // Éducation - Rouge
-            '#8B5CF6', // Industrie - Violet
-            '#6B7280'  // Commerce - Gris
-          ],
-          borderWidth: 0,               
-          // cutout: 0 // Pie chart plein, pas de donut
+          data: [100],
+          backgroundColor: ['#E5E7EB'],
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            enabled: false
+          }
+        }
+      }
+    });
+
+    this.chartInstances.push(chart);
+  }
+
+  private createDynamicSectorsChart(ctx: CanvasRenderingContext2D): void {
+    const chart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: this.sectorData.map(sector => sector.sectorName),
+        datasets: [{
+          data: this.sectorData.map(sector => sector.percentage),
+          backgroundColor: this.sectorData.map(sector => sector.color),
+          borderWidth: 0,
         }]
       },
       options: {
@@ -275,7 +324,7 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
               label: (context) => {
                 const label = context.label || '';
                 const value = context.parsed;
-                return `${label}: ${value}%`;
+                return `${label}: ${this.companySectorService.formatPercentage(value)}`;
               }
             }
           }
@@ -342,6 +391,29 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     this.chartInstances.push(chart);
   }
 
+  /**
+   * Mettre à jour le graphique des secteurs avec les données dynamiques
+   */
+  private updateSectorsChart(): void {
+    // Trouver et détruire l'ancien graphique des secteurs
+    const sectorChartIndex = this.chartInstances.findIndex(chart => 
+      chart.canvas === this.sectorsChart?.nativeElement
+    );
+    
+    if (sectorChartIndex !== -1) {
+      this.chartInstances[sectorChartIndex].destroy();
+      this.chartInstances.splice(sectorChartIndex, 1);
+    }
+
+    // Recréer le graphique avec les nouvelles données
+    if (this.sectorsChart?.nativeElement) {
+      const ctx = this.sectorsChart.nativeElement.getContext('2d');
+      if (ctx) {
+        this.createDynamicSectorsChart(ctx);
+      }
+    }
+  }
+
   private updateChartsLanguage(): void {
     // Détruire les graphiques existants
     this.chartInstances.forEach(chart => {
@@ -374,5 +446,16 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
       'Commerce': 'Commerce'
     };
     return termMap[term as keyof typeof termMap] || term;
+  }
+
+  /**
+   * Obtenir le nombre total de membres basé sur les données des secteurs
+   */
+  getTotalMembersFromSectors(): number {
+    if (this.sectorData.length === 0) return this.stats.totalMembers;
+    
+    // Simuler un nombre total basé sur les pourcentages
+    // Dans une vraie application, vous auriez le nombre réel depuis l'API
+    return Math.round(this.stats.totalMembers * (this.sectorData.reduce((sum, sector) => sum + sector.percentage, 0) / 100));
   }
 }

@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
 import { HeaderMembreComponent } from "../header-membre/header-membre.component";
 import { LanguageService } from '../../../services/language.service';
+import { StatisticsService, VueProfilData, ChronologieStats, VueProfilTotal, ContactRecuStats } from '../../../services/statistics.service';
 import { Subscription } from 'rxjs';
 
 Chart.register(...registerables);
@@ -21,11 +22,22 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
   currentRoute: string;
   private langSubscription!: Subscription;
   currentLang = 'fr';
+  
+  // Données dynamiques
+  companyId: number = 1; // À remplacer par l'ID réel de l'entreprise connectée
+  vueProfilTotalData: VueProfilTotal | null = null;
+  contactRecuData: ContactRecuStats | null = null;
+  vueProfilChartData: VueProfilData[] = [];
+  chronologieData: ChronologieStats | null = null;
+  lastUpdateDate: string = '';
+  isLoading: boolean = true;
+  dataLoaded: boolean = false;
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private statisticsService: StatisticsService
   ) {
     this.currentRoute = this.router.url;
   }
@@ -33,114 +45,84 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
   // Textes dynamiques
   get texts() {
     return this.currentLang === 'fr' ? {
-      // Titres et descriptions
       pageTitle: 'Statistiques de votre profil',
       pageDescription: 'Suivez les performances de votre profil et l\'engagement des visiteurs.',
       profileViews: 'Vues du profil',
       contactsReceived: 'Contacts reçus',
       lastUpdate: 'Dernière mise à jour',
       timelineContacts: 'Chronologie des contacts',
-      
-      // Métriques
       sinceLastMonth: 'depuis le mois dernier',
       sinceLastWeek: 'depuis la semaine dernière',
-      
-      // Légende timeline
       today: 'Aujourd\'hui',
       thisWeek: 'Cette semaine',
       thisMonth: 'Ce mois',
       thisYear: 'Cette année',
-      
-      // Tooltips
       dateLabel: 'Date',
       viewsLabel: 'vues',
       contactsLabel: 'contacts',
-      
-      // Navigation
-      about: 'À propos',
-      media: 'Média',
-      schedule: 'Horaires',
-      statistics: 'Statistiques'
+      loading: 'Chargement...',
+      noData: 'Aucune donnée disponible'
     } : {
-      // Titles and descriptions
       pageTitle: 'Your Profile Statistics',
       pageDescription: 'Track your profile performance and visitor engagement.',
       profileViews: 'Profile Views',
       contactsReceived: 'Contacts Received',
       lastUpdate: 'Last Update',
       timelineContacts: 'Contacts Timeline',
-      
-      // Metrics
       sinceLastMonth: 'since last month',
       sinceLastWeek: 'since last week',
-      
-      // Timeline legend
       today: 'Today',
       thisWeek: 'This week',
       thisMonth: 'This month',
       thisYear: 'This year',
-      
-      // Tooltips
       dateLabel: 'Date',
       viewsLabel: 'views',
       contactsLabel: 'contacts',
-      
-      // Navigation
-      about: 'About',
-      media: 'Media',
-      schedule: 'Schedule',
-      statistics: 'Statistics'
+      loading: 'Loading...',
+      noData: 'No data available'
     };
   }
 
-  // Données pour les métriques principales avec traductions
+  // Métriques principales formatées
   get metriques() {
-    return this.currentLang === 'fr' ? {
+    return {
       vuesProfil: {
-        valeur: '1 265',
-        croissance: '+12%',
-        periode: 'depuis le mois dernier'
+        valeur: this.vueProfilTotalData?.total ? this.formatNumber(this.vueProfilTotalData.total) : '0',
+        croissance: this.vueProfilTotalData ? this.formatEvolution(this.vueProfilTotalData.weeklyEvolution) : '+0%',
+        periode: this.texts.sinceLastWeek,
+        croissancePositive: this.vueProfilTotalData ? this.vueProfilTotalData.weeklyEvolution >= 0 : true
       },
       contactsRecus: {
-        valeur: '37',
-        croissance: '+5%',
-        periode: 'depuis la semaine dernière'
+        valeur: this.contactRecuData?.total ? this.formatNumber(this.contactRecuData.total) : '0',
+        croissance: this.contactRecuData ? this.formatEvolution(this.contactRecuData.weeklyEvolution) : '+0%',
+        periode: this.texts.sinceLastWeek,
+        croissancePositive: this.contactRecuData ? this.contactRecuData.weeklyEvolution >= 0 : true
       },
       derniereMiseAJour: {
-        valeur: '17/08/2025',
-        croissance: '+18%',
-        periode: 'depuis le mois dernier'
-      }
-    } : {
-      vuesProfil: {
-        valeur: '1,265',
-        croissance: '+12%',
-        periode: 'since last month'
-      },
-      contactsRecus: {
-        valeur: '37',
-        croissance: '+5%',
-        periode: 'since last week'
-      },
-      derniereMiseAJour: {
-        valeur: '08/17/2025',
-        croissance: '+18%',
-        periode: 'since last month'
+        valeur: this.lastUpdateDate || '--/--/----',
+        croissance: '',
+        periode: '',
+        croissancePositive: true
       }
     };
   }
 
-  // Données pour la légende du graphique en secteurs avec traductions
+  // Données pour la légende du graphique en secteurs
   get donneesChronologie() {
-    const labels = this.currentLang === 'fr' ? 
-      ["Aujourd'hui", 'Cette semaine', 'Ce mois', 'Cette année'] :
-      ['Today', 'This week', 'This month', 'This year'];
-    
+    if (!this.chronologieData) {
+      return [
+        { label: this.texts.today, valeur: 0, couleur: 'bg-orange-500' },
+        { label: this.texts.thisWeek, valeur: 0, couleur: 'bg-green-500' },
+        { label: this.texts.thisMonth, valeur: 0, couleur: 'bg-yellow-500' },
+        { label: this.texts.thisYear, valeur: 0, couleur: 'bg-blue-500' }
+      ];
+    }
+
     return [
-      { label: labels[0], valeur: 15, couleur: 'bg-orange-500' },
-      { label: labels[1], valeur: 25, couleur: 'bg-green-500' },
-      { label: labels[2], valeur: 30, couleur: 'bg-yellow-500' },
-      { label: labels[3], valeur: 30, couleur: 'bg-blue-500' }
+      { label: this.texts.today, valeur: this.chronologieData.today, couleur: 'bg-orange-500' },
+      { label: this.texts.thisWeek, valeur: this.chronologieData.lastWeek, couleur: 'bg-green-500' },
+      { label: this.texts.thisMonth, valeur: this.chronologieData.lastMonth, couleur: 'bg-yellow-500' },
+      { label: this.texts.thisYear, valeur: this.chronologieData.currentYear, couleur: 'bg-blue-500' }
     ];
   }
 
@@ -148,19 +130,141 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
     // S'abonner aux changements de langue
     this.langSubscription = this.languageService.currentLang$.subscribe(lang => {
       this.currentLang = lang;
-      this.updateChartsLanguage();
+      if (this.dataLoaded) {
+        this.updateChartsLanguage();
+      }
     });
     
-    // Initialiser la langue
     this.currentLang = this.languageService.getCurrentLanguage();
+    
+    // Charger les données
+    this.loadAllStatistics();
   }
 
   ngAfterViewInit(): void {
-    // Petit délai pour s'assurer que les éléments DOM sont bien rendus
-    setTimeout(() => {
-      this.initLineChart();
-      this.initPieChart();
-    }, 200);
+    // Les graphiques seront initialisés après le chargement des données
+  }
+
+  private loadAllStatistics(): void {
+    this.isLoading = true;
+
+    // Charger toutes les statistiques en parallèle
+    Promise.all([
+      this.loadVueProfilTotal(),
+      this.loadContactRecu(),
+      this.loadVueProfil(),
+      this.loadChronologie()
+    ]).then(() => {
+      this.isLoading = false;
+      this.dataLoaded = true;
+      // Attendre que le DOM soit complètement rendu
+      setTimeout(() => {
+        this.initLineChart();
+        this.initPieChart();
+      }, 300);
+    }).catch(error => {
+      console.error('Erreur lors du chargement des statistiques:', error);
+      this.isLoading = false;
+      this.dataLoaded = true;
+    });
+  }
+
+  private loadVueProfilTotal(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.statisticsService.getVueProfilTotal(this.companyId).subscribe({
+        next: (data: any) => {
+          this.vueProfilTotalData = data;
+          resolve();
+        },
+        error: (error) => {
+          console.error('Erreur lors du chargement des vues totales:', error);
+          reject(error);
+        }
+      });
+    });
+  }
+
+  private loadContactRecu(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.statisticsService.getContactRecu(this.companyId).subscribe({
+        next: (data) => {
+          this.contactRecuData = data;
+          resolve();
+        },
+        error: (error) => {
+          console.error('Erreur lors du chargement des contacts reçus:', error);
+          reject(error);
+        }
+      });
+    });
+  }
+
+  private loadVueProfil(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.statisticsService.getVueProfil(this.companyId).subscribe({
+        next: (data) => {
+          this.vueProfilChartData = data;
+          if (data.length > 0) {
+            this.lastUpdateDate = this.formatDate(data[data.length - 1].date);
+          }
+          resolve();
+        },
+        error: (error) => {
+          console.error('Erreur lors du chargement des vues profil:', error);
+          reject(error);
+        }
+      });
+    });
+  }
+
+  private loadChronologie(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.statisticsService.getChronologie(this.companyId).subscribe({
+        next: (data) => {
+          this.chronologieData = data;
+          resolve();
+        },
+        error: (error) => {
+          console.error('Erreur lors du chargement de la chronologie:', error);
+          reject(error);
+        }
+      });
+    });
+  }
+
+  private formatNumber(num: number): string {
+    if (this.currentLang === 'fr') {
+      return num.toLocaleString('fr-FR');
+    } else {
+      return num.toLocaleString('en-US');
+    }
+  }
+
+  private formatEvolution(evolution: number): string {
+    const sign = evolution >= 0 ? '+' : '';
+    return `${sign}${evolution.toFixed(1)}%`;
+  }
+
+  private formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    if (this.currentLang === 'fr') {
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      return `${day}/${month}`;
+    } else {
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      return `${month}/${day}`;
+    }
+  }
+
+  private formatFullDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    if (this.currentLang === 'fr') {
+      return date.toLocaleDateString('fr-FR');
+    } else {
+      return date.toLocaleDateString('en-US');
+    }
   }
 
   private updateChartsLanguage(): void {
@@ -180,7 +284,7 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
   private initLineChart(): void {
     const canvas = document.getElementById('lineChart') as HTMLCanvasElement;
     if (!canvas) {
-      console.error('Canvas lineChart non trouvé - vérifiez que l\'élément existe dans le DOM');
+      console.error('Canvas lineChart non trouvé - le DOM n\'est pas encore rendu');
       return;
     }
     
@@ -190,26 +294,30 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    // Préparer les données du graphique
+    const labels = this.vueProfilChartData.map(d => this.formatDate(d.date));
+    const dataValues = this.vueProfilChartData.map(d => d.count);
+
     const config: ChartConfiguration = {
       type: 'line' as ChartType,
       data: {
-        labels: ['17/04', '20/04', '23/04', '26/04', '29/04', '02/05', '05/05', '08/05', '11/05', '14/05'],
+        labels: labels.length > 0 ? labels : ['--'],
         datasets: [{
           label: this.texts.profileViews,
-          data: [45, 42, 48, 38, 42, 55, 62, 70, 85, 95],
+          data: dataValues.length > 0 ? dataValues : [0],
           borderColor: '#3B82F6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          borderWidth: 3,
-          fill: false,
+          borderWidth: 2,
+          fill: true,
           tension: 0.4,
           pointBackgroundColor: '#3B82F6',
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
-          pointRadius: 5,
-          pointHoverRadius: 7,
+          pointRadius: 4,
+          pointHoverRadius: 6,
           pointHoverBackgroundColor: '#3B82F6',
           pointHoverBorderColor: '#ffffff',
-          pointHoverBorderWidth: 3
+          pointHoverBorderWidth: 2
         }]
       },
       options: {
@@ -220,22 +328,29 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
             display: false
           },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
             titleColor: '#ffffff',
             bodyColor: '#ffffff',
             borderColor: '#3B82F6',
-            borderWidth: 2,
-            cornerRadius: 8,
+            borderWidth: 1,
+            cornerRadius: 6,
             displayColors: false,
+            padding: 10,
             titleFont: {
-              size: 13,
-              weight: 'bold'
+              size: 12,
+              weight: 'normal'
             },
             bodyFont: {
               size: 12
             },
             callbacks: {
-              title: (context) => `${this.texts.dateLabel}: ${context[0].label}`,
+              title: (context) => {
+                const index = context[0].dataIndex;
+                if (this.vueProfilChartData[index]) {
+                  return this.formatFullDate(this.vueProfilChartData[index].date);
+                }
+                return context[0].label;
+              },
               label: (context) => `${context.parsed.y} ${this.texts.viewsLabel}`
             }
           }
@@ -243,21 +358,18 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
         scales: {
           y: {
             beginAtZero: true,
-            max: 172,
             ticks: {
-              stepSize: 45,
               color: '#64748B',
               font: {
-                size: 12,
+                size: 11,
                 family: 'Inter, system-ui, sans-serif'
               },
-              callback: function(value) {
-                return value;
-              }
+              padding: 8
             },
             grid: {
-              color: 'rgba(148, 163, 184, 0.2)',
-              lineWidth: 1
+              color: 'rgba(148, 163, 184, 0.15)',
+              lineWidth: 1,
+              // drawBorder: false
             },
             border: {
               display: false
@@ -267,10 +379,11 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
             ticks: {
               color: '#64748B',
               font: {
-                size: 11,
+                size: 10,
                 family: 'Inter, system-ui, sans-serif'
               },
-              maxRotation: 0
+              maxRotation: 0,
+              padding: 8
             },
             grid: {
               display: false
@@ -283,11 +396,6 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
         interaction: {
           intersect: false,
           mode: 'index'
-        },
-        elements: {
-          point: {
-            hoverBackgroundColor: '#3B82F6'
-          }
         }
       }
     };
@@ -298,7 +406,7 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
   private initPieChart(): void {
     const canvas = document.getElementById('pieChart') as HTMLCanvasElement;
     if (!canvas) {
-      console.error('Canvas pieChart non trouvé - vérifiez que l\'élément existe dans le DOM');
+      console.error('Canvas pieChart non trouvé - le DOM n\'est pas encore rendu');
       return;
     }
     
@@ -308,23 +416,25 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    const chronoData = this.donneesChronologie;
+
     const config: ChartConfiguration = {
       type: 'pie' as ChartType,
       data: {
-        labels: [this.texts.today, this.texts.thisWeek, this.texts.thisMonth, this.texts.thisYear],
+        labels: chronoData.map(d => d.label),
         datasets: [{
-          data: [15, 25, 30, 30],
+          data: chronoData.map(d => d.valeur),
           backgroundColor: [
             '#F97316', // Orange - Aujourd'hui
             '#10B981', // Vert - Cette semaine  
             '#F59E0B', // Jaune - Ce mois
             '#3B82F6'  // Bleu - Cette année
           ],
-          borderWidth: 3,
+          borderWidth: 2,
           borderColor: '#ffffff',
-          hoverBorderWidth: 4,
+          hoverBorderWidth: 3,
           hoverBorderColor: '#ffffff',
-          hoverOffset: 8
+          hoverOffset: 6
         }]
       },
       options: {
@@ -335,15 +445,16 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
             display: false
           },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
             titleColor: '#ffffff',
             bodyColor: '#ffffff',
             borderColor: 'rgba(148, 163, 184, 0.2)',
             borderWidth: 1,
-            cornerRadius: 8,
+            cornerRadius: 6,
             displayColors: true,
+            padding: 10,
             titleFont: {
-              size: 13,
+              size: 12,
               weight: 'bold'
             },
             bodyFont: {
@@ -352,11 +463,10 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
             callbacks: {
               title: (context) => context[0].label,
               label: (context) => {
-                const label = context.label || '';
                 const value = context.parsed;
                 const dataset = context.dataset.data as number[];
                 const total = dataset.reduce((a: number, b: number) => a + b, 0);
-                const percentage = ((value / total) * 100).toFixed(1);
+                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
                 return ` ${value} ${this.texts.contactsLabel} (${percentage}%)`;
               }
             }
@@ -366,7 +476,7 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
           intersect: false
         },
         animation: {
-          duration: 1000
+          duration: 800
         },
         onHover: (event, activeElements) => {
           const canvas = event.native?.target as HTMLCanvasElement;

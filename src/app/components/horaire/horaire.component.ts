@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterOutlet } from '@angular/router';
 import { HeaderMembreComponent } from "../header-membre/header-membre.component";
 import { LanguageService } from '../../../services/language.service';
+import { CompanyService, CompanySchedule } from '../../../services/company.service'; // Import du service et de l'interface
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -18,6 +19,20 @@ export class HoraireComponent implements OnInit, OnDestroy {
   currentRoute: string;
   private langSubscription!: Subscription;
   currentLang = 'fr';
+  companySchedules: CompanySchedule[] = []; // Pour stocker les horaires récupérés
+  loading = false;
+  error = '';
+
+  // Mapping des jours de la semaine entre anglais et français
+  private dayMapping: { [key: string]: string } = {
+    'MONDAY': 'Lundi',
+    'TUESDAY': 'Mardi',
+    'WEDNESDAY': 'Mercredi',
+    'THURSDAY': 'Jeudi',
+    'FRIDAY': 'Vendredi',
+    'SATURDAY': 'Samedi',
+    'SUNDAY': 'Dimanche'
+  };
 
   joursSemaine = [
     { nom: 'Lundi', value: 'lundi', ouvert: true, ouverture: '09:00', fermeture: '18:00' },
@@ -52,7 +67,9 @@ export class HoraireComponent implements OnInit, OnDestroy {
       companyPhone: '+1 555-123-4567',
       companyWebsite: 'www.exemple.us',
       profilePreview: 'Aperçu du profil public',
-      profileWarning: 'Votre profil n\'est pas encore visible par le public. Complétez vos informations pour activer votre profil.'
+      profileWarning: 'Votre profil n\'est pas encore visible par le public. Complétez vos informations pour activer votre profil.',
+      loading: 'Chargement des horaires...',
+      errorLoading: 'Erreur lors du chargement des horaires'
     } : {
       title: 'Opening Hours',
       day: 'Day',
@@ -74,7 +91,9 @@ export class HoraireComponent implements OnInit, OnDestroy {
       companyPhone: '+1 555-123-4567',
       companyWebsite: 'www.example.us',
       profilePreview: 'Public profile preview',
-      profileWarning: 'Your profile is not yet visible to the public. Complete your information to activate your profile.'
+      profileWarning: 'Your profile is not yet visible to the public. Complete your information to activate your profile.',
+      loading: 'Loading schedules...',
+      errorLoading: 'Error loading schedules'
     };
   }
 
@@ -98,7 +117,8 @@ export class HoraireComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private companyService: CompanyService // Injection du service
   ) {
     this.currentRoute = this.router.url;
   }
@@ -113,12 +133,79 @@ export class HoraireComponent implements OnInit, OnDestroy {
     this.currentLang = this.languageService.getCurrentLanguage();
     
     this.initializeForm();
+    this.loadCompanySchedules(); // Charger les horaires de l'entreprise
   }
 
   ngOnDestroy(): void {
     if (this.langSubscription) {
       this.langSubscription.unsubscribe();
     }
+  }
+
+  /**
+   * Charger les horaires de l'entreprise depuis l'API
+   */
+  public loadCompanySchedules(): void {
+    this.loading = true;
+    this.error = '';
+    
+    // Remplacez 1 par l'ID réel de l'entreprise (peut-être depuis le service d'authentification ou les paramètres de route)
+    const companyId = 1;
+    
+    this.companyService.getHoraire(companyId).subscribe({
+      next: (schedules: CompanySchedule[]) => {
+        this.companySchedules = schedules;
+        this.updateFormWithSchedules(schedules);
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des horaires:', error);
+        this.error = this.texts.errorLoading;
+        this.loading = false;
+      }
+    });
+  }
+
+  /**
+   * Mettre à jour le formulaire avec les horaires récupérés
+   */
+  private updateFormWithSchedules(schedules: CompanySchedule[]): void {
+    schedules.forEach(schedule => {
+      const dayNameFrench = this.dayMapping[schedule.dayOfWeek];
+      const dayValue = dayNameFrench.toLowerCase();
+      
+      // Mettre à jour le statut ouvert/fermé
+      const ouvertControl = this.horaireForm.get(`${dayValue}_ouvert`);
+      if (ouvertControl) {
+        ouvertControl.setValue(!schedule.closed);
+      }
+
+      // Mettre à jour les heures d'ouverture et fermeture
+      if (!schedule.closed) {
+        const ouvertureControl = this.horaireForm.get(`${dayValue}_ouverture`);
+        const fermetureControl = this.horaireForm.get(`${dayValue}_fermeture`);
+        
+        if (ouvertureControl && schedule.openingTime) {
+          ouvertureControl.setValue(schedule.openingTime);
+        }
+        if (fermetureControl && schedule.closingTime) {
+          fermetureControl.setValue(schedule.closingTime);
+        }
+      }
+
+      // Mettre à jour la liste joursSemaine pour l'affichage
+      const jourIndex = this.joursSemaine.findIndex(j => j.nom.toLowerCase() === dayNameFrench.toLowerCase());
+      if (jourIndex !== -1) {
+        this.joursSemaine[jourIndex].ouvert = !schedule.closed;
+        this.joursSemaine[jourIndex].ouverture = schedule.openingTime || '';
+        this.joursSemaine[jourIndex].fermeture = schedule.closingTime || '';
+      }
+    });
+
+    // Mettre à jour les validateurs
+    this.joursSemaine.forEach(jour => {
+      this.updateDayValidators(jour.value);
+    });
   }
 
   private initializeForm(): void {
@@ -159,6 +246,26 @@ export class HoraireComponent implements OnInit, OnDestroy {
       ouvertureControl?.updateValueAndValidity();
       fermetureControl?.updateValueAndValidity();
     }
+  }
+
+  /**
+   * Mettre à jour les validateurs pour un jour spécifique
+   */
+  private updateDayValidators(jourValue: string): void {
+    const ouvertControl = this.horaireForm.get(`${jourValue}_ouvert`);
+    const ouvertureControl = this.horaireForm.get(`${jourValue}_ouverture`);
+    const fermetureControl = this.horaireForm.get(`${jourValue}_fermeture`);
+
+    if (ouvertControl?.value) {
+      ouvertureControl?.setValidators([Validators.required, Validators.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)]);
+      fermetureControl?.setValidators([Validators.required, Validators.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)]);
+    } else {
+      ouvertureControl?.clearValidators();
+      fermetureControl?.clearValidators();
+    }
+
+    ouvertureControl?.updateValueAndValidity();
+    fermetureControl?.updateValueAndValidity();
   }
 
   isFieldInvalid(fieldName: string): boolean {

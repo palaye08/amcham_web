@@ -8,6 +8,7 @@ import { catchError, map } from 'rxjs/operators';
 export interface Company {
   id: number;
   name: string;
+  city:string,
   description: string;
   address: string;
   email: string;
@@ -21,6 +22,13 @@ export interface Company {
   lat: number;
   lon: number;
 }
+  // Ajoutez cette interface dans la section des interfaces
+  export interface CompanySchedule {
+    dayOfWeek: string;
+    openingTime: string | null;
+    closingTime: string | null;
+    closed: boolean;
+  }
 
 export interface CompanySearchResponse {
   content: Company[];
@@ -182,13 +190,13 @@ export class CompanyService {
   /**
    * Obtenir une entreprise par son ID
    */
-  getCompanyById(companyId: number): Observable<Company> {
-    return this.http.get<Company>(`${this.baseUrl}/api/companies/${companyId}`)
+  getCompanyById(id: number): Observable<Company> {
+    return this.http.get<Company>(`${this.baseUrl}/api/companies/${id}`)
       .pipe(
         catchError(this.handleError)
       );
   }
-
+ 
   /**
    * Mettre à jour une entreprise
    */
@@ -322,6 +330,18 @@ export class CompanyService {
     }));
   }
 
+
+
+// Ajoutez cette méthode dans la classe CompanyService
+/**
+ * Obtenir les horaires d'une entreprise - GET /api/companies/{id}/schedules
+ */
+getHoraire(companyId: number): Observable<CompanySchedule[]> {
+  return this.http.get<CompanySchedule[]>(`${this.baseUrl}/api/companies/${companyId}/schedules`)
+    .pipe(
+      catchError(this.handleError)
+    );
+}
   /**
    * Messages d'erreur selon le statut HTTP
    */

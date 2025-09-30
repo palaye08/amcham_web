@@ -4,7 +4,26 @@
 <div class="min-h-screen bg-gray-50 ">
   <!-- Contenu principal -->
   <div class="w-[92%] mx-auto px-6 py-8">
-    <div class="flex gap-8">
+    
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center py-12">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p class="mt-4 text-gray-600">{{ texts.loading }}</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="errorMessage && !isLoading" class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+      <div class="flex items-center text-red-700">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="font-medium">{{ errorMessage }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoading && !errorMessage" class="flex gap-8">
       <!-- Sidebar gauche -->
       <div class="w-80 space-y-6">
         <!-- Info company card -->
@@ -14,29 +33,29 @@
               <img class="h-12 w-12 rounded-[50%]" src="../assets/logoW.png" alt="">
             </div>
             <div>
-              <h3 class="font-semibold text-gray-900">{{ companyData.name }}</h3>
-              <p class="text-sm text-gray-500">{{ companyData.sector }}</p>
+              <h3 class="font-semibold text-gray-900">{{ companyData?.name || 'Nom de l\'entreprise' }}</h3>
+              <p class="text-sm text-gray-500">{{ companyData?.sector || 'Secteur' }}</p>
             </div>
           </div>
           
           <div class="space-y-3 text-sm text-gray-600">
-            <div class="flex items-center">
+            <div *ngIf="companyData?.address" class="flex items-center">
               <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
               </svg>
-              {{ companyData.address }}
+              {{ companyData?.address }}
             </div>
-            <div class="flex items-center">
+            <div *ngIf="companyData?.telephone" class="flex items-center">
               <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
               </svg>
-              {{ companyData.phone }}
+              {{ companyData?.telephone }}
             </div>
-            <div class="flex items-center">
+            <div *ngIf="companyData?.videoLink" class="flex items-center">
               <svg class="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"></path>
               </svg>
-              {{ companyData.website }}
+              {{ companyData?.videoLink }}
             </div>
           </div>
 
@@ -95,7 +114,7 @@
               <div *ngFor="let photo of photos; let i = index" class="relative group">
                 <div class="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                   <img 
-                    [src]="photo" 
+                    [src]="'https://wakana.online/repertoire_amchams/'+ photo" 
                     [alt]="'Photo entreprise ' + (i + 1)" 
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                   >
@@ -161,6 +180,7 @@
                 id="videoUrl"
                 (input)="onVideoUrlChange($event)"
                 [placeholder]="texts.videoUrlPlaceholder"
+                [value]="videoUrl"
                 class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
                 [class.border-red-300]="videoUrl && !isValidVideoUrl(videoUrl)"
                 [class.border-green-300]="videoUrl && isValidVideoUrl(videoUrl)"
