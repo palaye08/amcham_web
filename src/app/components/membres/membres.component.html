@@ -107,19 +107,10 @@
          
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden">
-                  <img [src]=" 'https://wakana.online/repertoire_amchams/'+ membre.pictures[0]" [alt]="" class="h-full w-full object-cover">
+                  <img [src]=" 'https://wakana.online/repertoire_amchams/'+ membre.logo" [alt]="" class="h-full w-full object-cover">
                 </div>
-                <div class="flex-shrink-0 h-12 w-12  rounded-full flex items-center justify-center font-semibold text-white"
-                     [ngClass]="{
-                       'bg-blue-500': membre.secteur === 'Technologie' || membre.secteur === 'Technology',
-                       'bg-emerald-500': membre.secteur === 'Finance',
-                       'bg-cyan-500': membre.secteur === 'Santé' || membre.secteur === 'Health',
-                       'bg-amber-500': membre.secteur === 'Éducation' || membre.secteur === 'Education',
-                       'bg-gray-500': !membre.secteur
-                     }">
-                  <span class="text-sm">{{getSectorInitial(membre.nom)}}</span>
-                </div>
-                <div class="ml-4 relative right-12">
+            
+                <div class="ml-4 right-12">
                   <div class="text-sm font-semibold text-gray-900">{{membre.nom}}</div>
                   <div class="text-sm text-gray-500">{{membre.secteur}}</div>
                 </div>
@@ -173,9 +164,10 @@
                   class="text-gray-400 hover:text-orange-500 transition-colors p-1"
                   (click)="editMember(membre)"
                   title="Modifier">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                  </svg>
+                  <svg class="w-5 h-5" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4.16667 15.8333H5.35417L13.5 7.6875L12.3125 6.5L4.16667 14.6458V15.8333ZM2.5 17.5V13.9583L13.5 2.97917C13.6667 2.82639 13.8508 2.70833 14.0525 2.625C14.2542 2.54167 14.4658 2.5 14.6875 2.5C14.9092 2.5 15.1244 2.54167 15.3333 2.625C15.5422 2.70833 15.7228 2.83333 15.875 3L17.0208 4.16667C17.1875 4.31944 17.3092 4.5 17.3858 4.70833C17.4625 4.91667 17.5006 5.125 17.5 5.33333C17.5 5.55556 17.4619 5.7675 17.3858 5.96917C17.3097 6.17083 17.1881 6.35472 17.0208 6.52083L6.04167 17.5H2.5ZM12.8958 7.10417L12.3125 6.5L13.5 7.6875L12.8958 7.10417Z" fill="#F68647"/>
+                    </svg>
+                    
                 </button>
 
                 <!-- Status Toggle -->

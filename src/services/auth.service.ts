@@ -1,25 +1,14 @@
 // auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  telephone: string;
-  profil: string;
-  countryAmchamId: number | null;
-  companyId: number | null;
-}
 // Interfaces
 export interface AuthRequest {
   email: string;
   password: string;
 }
-
-
 
 export interface SignupRequest {
   name: string;
@@ -28,6 +17,18 @@ export interface SignupRequest {
   telephone: string;
   profil: string;
 }
+export interface CurrentUser {
+
+  id: number;
+  name: string;
+  email: string;
+  telephone: string;
+  profil: string;
+  countryAmchamId: number | null;
+  companyId: number | null;
+
+}
+
 
 export interface ResetPasswordRequest {
   email: string;
@@ -72,149 +73,78 @@ export class AuthService {
   }
 
   /**
- * Initialise l'état d'authentification au démarrage
- * CORRECTION: Toujours appeler getMe() pour avoir les données complètes
- */
-private initializeAuthState(): void {
-  const token = this.getToken();
-  const userData = localStorage.getItem('user_data');
-  
-  if (token && this.isTokenValid(token)) {
-    if (userData) {
-      // Utiliser les données du localStorage
+   * Initialise l'état d'authentification au démarrage
+   */
+  private initializeAuthState(): void {
+    const token = this.getToken();
+    const refreshToken = this.getRefreshToken();
+    const userData = localStorage.getItem('user_data');
+    
+    if (token && this.isTokenValid(token) && userData) {
       const user = JSON.parse(userData);
       this.currentUserSubject.next(user);
       this.isAuthenticatedSubject.next(true);
-      console.log('🔄 Utilisateur restauré depuis localStorage:', user);
-    } else {
-      // Pas de données en cache, on appelle l'API
-      console.log('⚠️ Pas de user_data en cache, appel à getMe()');
-      this.getMe().subscribe({
-        next: (fullUser) => {
-          console.log('✅ Données utilisateur récupérées depuis l\'API:', fullUser);
-          this.currentUserSubject.next(fullUser);
-          this.isAuthenticatedSubject.next(true);
-        },
-        error: (err) => {
-          console.error('❌ Erreur getMe() au démarrage, fallback sur JWT:', err);
-          // Fallback sur les données du token (même si incomplètes)
-          const user = this.getUserFromToken(token);
-          this.currentUserSubject.next(user);
-          this.isAuthenticatedSubject.next(true);
-        }
-      });
+    } else if (token) {
+      // Token invalide, on nettoie
+      this.clearAuthData();
     }
-  } else if (token) {
-    // Token invalide, on nettoie
-    console.warn('⚠️ Token invalide détecté, nettoyage');
-    this.clearAuthData();
   }
-}
+
+  /**
+   * Authentification - POST /api/auth/signin
+   */
+  authenticate(email: string, password: string): Observable<AuthResult> {
+    const authRequest: AuthRequest = { email, password };
+
+    return this.http.post<AuthResponse>(`${this.baseUrl}/api/auth/signin`, authRequest)
+      .pipe(
+        tap(response => console.log('Réponse authentification:', response)),
+        map(response => {
+          if (response?.token && response?.refreshToken) {
+            // Extraire les informations utilisateur du token
+            const user = this.getUserFromToken(response.token);
+            
+            // Stocker les tokens et données utilisateur
+            this.storeAuthData(response.token, response.refreshToken, user);
+            
+            // Mettre à jour les observables
+            this.currentUserSubject.next(user);
+            this.isAuthenticatedSubject.next(true);
+            
+            return {
+              isSuccess: true,
+              token: response.token,
+              refreshToken: response.refreshToken,
+              user: user
+            };
+          }
+          
+          return {
+            isSuccess: false,
+            errorMessage: 'Réponse invalide du serveur - tokens manquants'
+          };
+        }),
+        catchError(this.handleError)
+      );
+  }
+// Ajoutez cette méthode dans la classe AuthService
 /**
- * Récupérer les informations complètes de l'utilisateur connecté
- * GET /api/user/me
- * IMPORTANT: Nécessite l'en-tête Authorization avec le token Bearer
+ * Récupérer les informations de l'utilisateur connecté - GET /api/v1/user/me
  */
-getMe(): Observable<User> {
-  const headers = this.getAuthHeaders();
-  
-  console.log('🔑 [getMe] Headers envoyés:', headers.get('Authorization'));
-  console.log('🔍 [getMe] Tous les headers:', {
-    Authorization: headers.get('Authorization'),
-    ContentType: headers.get('Content-Type'),
-    withCredentials: true
-  });
-  console.log('🌐 [getMe] URL complète:', `${this.baseUrl}/api/user/me`);
-  
-  return this.http.get<User>(`${this.baseUrl}/api/v1/user/me`, {responseType: 'json'  , withCredentials: true } )
+getCurrentUserFromAPI(): Observable<CurrentUser> {
+  return this.http.get<CurrentUser>(`${this.baseUrl}/api/v1/user/me`,{
+
+    headers: this.getAuthHeaders()
+  })
     .pipe(
       tap(user => {
-        console.log('✅ Données utilisateur complètes (getMe):', user);
-        // Mettre à jour le localStorage avec les données complètes
-        localStorage.setItem('user_data', JSON.stringify(user));
-        // Mettre à jour le BehaviorSubject
+        // Mettre à jour les données utilisateur dans le localStorage et les observables
         this.currentUserSubject.next(user);
+        localStorage.setItem('user_data', JSON.stringify(user));
       }),
-      catchError((error) => {
-        console.error('❌ [getMe] Erreur complète:', {
-          status: error.status,
-          statusText: error.statusText,
-          url: error.url,
-          error: error.error,
-          headers: error.headers
-        });
-        return this.handleError(error);
-      })
+      catchError(this.handleError)
     );
 }
-
-
- /**
- * Authentification - POST /api/auth/signin
- * CORRECTION: S'assurer que getMe() est toujours appelé
- */
-authenticate(email: string, password: string): Observable<AuthResult> {
-  const authRequest: AuthRequest = { email, password };
-
-  return this.http.post<AuthResponse>(`${this.baseUrl}/api/auth/signin`, authRequest)
-    .pipe(
-      tap(response => console.log('📥 Réponse authentification:', response)),
-      switchMap(response => {
-        if (response?.token && response?.refreshToken) {
-          // Stocker les tokens
-          localStorage.setItem('auth_token', response.token);
-          localStorage.setItem('refresh_token', response.refreshToken);
-          
-          console.log('🔍 Appel à getMe() pour récupérer les données complètes...');
-          
-          // Récupérer les données complètes de l'utilisateur
-          return this.getMe().pipe(
-            map(user => {
-              console.log('✅ Données utilisateur complètes reçues:', user);
-              console.log('📌 CompanyId:', user.companyId);
-              
-              // Mettre à jour avec les données complètes
-              this.currentUserSubject.next(user);
-              this.isAuthenticatedSubject.next(true);
-              
-              return {
-                isSuccess: true,
-                token: response.token,
-                refreshToken: response.refreshToken,
-                user: user
-              };
-            }),
-            catchError(error => {
-              console.error('❌ Erreur getMe() après connexion:', error);
-              console.warn('⚠️ Utilisation des données du token JWT (incomplètes)');
-              
-              // En cas d'erreur getMe, utiliser les données du token
-              const userFromToken = this.getUserFromToken(response.token);
-              this.storeAuthData(response.token, response.refreshToken, userFromToken);
-              this.currentUserSubject.next(userFromToken);
-              this.isAuthenticatedSubject.next(true);
-              
-              return of({
-                isSuccess: true,
-                token: response.token,
-                refreshToken: response.refreshToken,
-                user: userFromToken,
-                warning: 'Données utilisateur incomplètes (getMe failed)'
-              });
-            })
-          );
-        }
-        
-        return of({
-          isSuccess: false,
-          errorMessage: 'Réponse invalide du serveur - tokens manquants'
-        });
-      }),
-      catchError((error) => this.handleError(error))
-    );
-}
-
-
   /**
    * Rafraîchir le token - POST /api/auth/refresh
    */
@@ -268,7 +198,7 @@ authenticate(email: string, password: string): Observable<AuthResult> {
   createUser(userData: SignupRequest): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/auth/signup`, userData)
       .pipe(
-        catchError((error) => this.handleError(error))
+        catchError(this.handleError)
       );
   }
 
@@ -278,7 +208,7 @@ authenticate(email: string, password: string): Observable<AuthResult> {
   resetPassword(passwordData: ResetPasswordRequest): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/auth/password/reset`, passwordData)
       .pipe(
-        catchError((error) => this.handleError(error))
+        catchError(this.handleError)
       );
   }
 
@@ -288,11 +218,9 @@ authenticate(email: string, password: string): Observable<AuthResult> {
   changePassword(id: number, passwordData: ChangePasswordRequest): Observable<any> {
     return this.http.post(`${this.baseUrl}/api/auth/password/change/${id}`, passwordData)
       .pipe(
-        catchError((error) => this.handleError(error))
+        catchError(this.handleError)
       );
   }
-
-
 
   /**
    * Déconnexion - GET /api/auth/logout
@@ -331,9 +259,8 @@ authenticate(email: string, password: string): Observable<AuthResult> {
 
   /**
    * Gestion des erreurs HTTP
-   * CORRECTION: Utiliser une arrow function pour préserver le contexte 'this'
    */
-  private handleError = (error: HttpErrorResponse): Observable<never> => {
+  private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'Une erreur est survenue';
     
     if (error.error instanceof ErrorEvent) {
@@ -365,7 +292,7 @@ authenticate(email: string, password: string): Observable<AuthResult> {
       case 401:
         return 'Email ou mot de passe incorrect';
       case 403:
-        return 'Accès non autorisé. Veuillez vous reconnecter.';
+        return 'Accès non autorisé';
       case 404:
         return 'Service non trouvé';
       case 409:
@@ -429,31 +356,18 @@ authenticate(email: string, password: string): Observable<AuthResult> {
   private getUserFromToken(token: string): any {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      console.log('Payload JWT complet:', payload);
-      
       return {
-        id: payload.userId || payload.id,
-        userId: payload.userId || payload.id,
-        name: payload.name || payload.username,
-        email: payload.email || payload.sub,
-        telephone: payload.telephone || payload.phone || payload.sub,
-        profil: payload.profil || payload.role,
-        companyId: payload.companyId || null,
-        countryAmchamId: payload.countryAmchamId || null,
-        sub: payload.sub,
+        userId: payload.userId,
+        profil: payload.profil,
+        sub: payload.sub, // téléphone probablement
         iat: payload.iat,
         exp: payload.exp
       };
     } catch (error) {
       console.error('Erreur décodage token:', error);
       return {
-        id: null,
-        userId: null,
-        name: 'unknown',
-        email: 'unknown',
+        userId: 'unknown',
         profil: 'unknown',
-        companyId: null,
-        countryAmchamId: null,
         sub: 'unknown'
       };
     }
@@ -478,17 +392,12 @@ authenticate(email: string, password: string): Observable<AuthResult> {
     }
   }
 
-
-
-/**
- * Méthodes utilitaires pour les composants
- * CORRECTION: Ajouter une méthode pour forcer le refresh
- */
-getCurrentUser(): any {
-  const user = this.currentUserSubject.value;
-  console.log('🔍 getCurrentUser() appelé, valeur actuelle:', user);
-  return user;
-}
+  /**
+   * Méthodes utilitaires pour les composants
+   */
+  getCurrentUser(): any {
+    return this.currentUserSubject.value;
+  }
 
   isAuthenticated(): boolean {
     const token = this.getToken();
@@ -509,27 +418,7 @@ getCurrentUser(): any {
   hasProfil(profil: string): boolean {
     return this.getUserProfil() === profil;
   }
-/**
- * Forcer le refresh des données utilisateur depuis l'API
- */
-refreshUserData(): Observable<User> {
-  console.log('🔄 Refresh forcé des données utilisateur');
-  return this.getMe();
-}
 
-/**
- * Vérifier si les données utilisateur sont complètes
- */
-hasCompleteUserData(): boolean {
-  const user = this.getCurrentUser();
-  const isComplete = user && 
-                     user.id && 
-                     user.email && 
-                     (user.companyId !== undefined || user.countryAmchamId !== undefined);
-  
-  console.log('🔍 Données utilisateur complètes?', isComplete, user);
-  return isComplete;
-}
   /**
    * Méthode pour forcer le refresh de l'état d'authentification
    */
@@ -548,17 +437,14 @@ hasCompleteUserData(): boolean {
     }
   }
 
-
-/**
- * Créer les headers d'authentification (simplifié)
- */
-getAuthHeaders(): HttpHeaders {
-  const token = this.getToken();
-  if (!token) {
-    return new HttpHeaders();
+  /**
+   * Intercepteur pour ajouter le token aux requêtes
+   */
+  getAuthHeaders(): HttpHeaders {
+    const token = this.getToken();
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
   }
-  return new HttpHeaders({
-    'Authorization': `Bearer ${token}`
-  });
-}
 }

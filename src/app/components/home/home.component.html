@@ -3,58 +3,71 @@
 
 <div class="min-h-screen bg-gray-50">
 <!-- Hero Section -->
-<section class="relative bg-[#1A3255] text-white overflow-hidden" style="height: 60vh;">
-    <div class="absolute inset-0 bg-black opacity-40"></div>
-    
-    <div class="relative h-full flex items-center" @slideAnimation>
-      <div class="relative z-10 w-[90%] mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative bottom-5">
-          
-          <!-- Image à gauche -->
-          <div class="lg:col-span-6">
-            <div class="p-6 rounded-lg backdrop-blur-sm">
-              <div class="w-full h-96 bg-cover bg-center transition-all duration-500 ease-in-out" 
-                   [style.background-image]="'url(' + currentSlide.image + ')'">
-                   <div class="flex space-x-6 relative top-[83%]">
-                    <button 
-                      (click)="goToSlide(currentSlideIndex === 0 ? heroSlides.length - 1 : currentSlideIndex - 1)"
-                      class="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-all duration-300 hover:scale-110">
-                      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                      </svg>
-                    </button>
-                    <button 
-                      (click)="goToSlide((currentSlideIndex + 1) % heroSlides.length)"
-                      class="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-all duration-300 hover:scale-110">
-                      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+<section class="relative bg-[#1A3255] text-white overflow-hidden" style="height: 70vh;">
+  <div class="relative h-full flex items-end" @slideAnimation>
+    <div class="relative z-10 w-[90%] mx-auto border-red-200">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Image à gauche - 50% de largeur -->
+        <div class="lg:col-span-6"> 
+          <div class="overflow-hidden">
+            <div class="w-full h-[60vh] bg-cover bg-center transition-all duration-500 ease-in-out" 
+                 [style.background-image]="'url(' + currentSlide.image + ')'">
+              <div class="flex space-x-6 relative top-[75%] left-6">
+                <button 
+                  (click)="goToSlide(currentSlideIndex === 0 ? heroSlides.length - 1 : currentSlideIndex - 1)"
+                  class="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-all duration-300 hover:scale-110">
+                  <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
+                <button 
+                  (click)="goToSlide((currentSlideIndex + 1) % heroSlides.length)"
+                  class="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-all duration-300 hover:scale-110">
+                  <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
-          
-          <!-- Texte à droite -->
-          <div class="lg:col-span-6 text-left">
-            <h1 class="text-3xl lg:text-5xl font-medium mb-4 leading-tight">
-              {{ currentSlide.title }}<br>
-              <span class="text-blue-300">{{ currentSlide.subtitle }}</span>
-            </h1>
-            <p class="text-xl text-blue-100 mb-8 leading-relaxed">
-              {{ currentSlide.description }}
-            </p>
-            <p class="text-lg text-blue-200 mb-10">
-              {{ currentSlide.subtext }}
-            </p>
+        </div>
+        
+        <!-- Texte à droite - 50% de largeur -->
+        <div class="lg:col-span-6 text-left">
+          <h1 class="text-3xl lg:text-5xl font-medium mb-4 leading-tight">
+            {{ currentSlide.title }}<br>
+            <span class="text-blue-300">{{ currentSlide.subtitle }}</span>
+          </h1>
+          <p class="text-xl text-blue-100 mb-8 leading-relaxed">
+            {{ currentSlide.description }}
+          </p>
+          <div class="flex items-center">
+            <button class="bg-red-600 hover:bg-red-700 text-white px-6 py-4 rounded-[30px] text-sm font-medium flex items-center space-x-2 transition-colors">
+             
+              <span>Voir plus</span>
+              <svg width="25" height="14" viewBox="0 0 25 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_1_1656)">
+                <path d="M19.25 7.75H5.75C5.33 7.75 5 7.42 5 7C5 6.58 5.33 6.25 5.75 6.25H19.25C19.67 6.25 20 6.58 20 7C20 7.42 19.67 7.75 19.25 7.75Z" fill="white"/>
+                <path d="M15.5 13C15.4016 13.0012 15.3041 12.9818 15.2137 12.943C15.1233 12.9043 15.042 12.847 14.975 12.775C14.675 12.475 14.675 12.01 14.975 11.71L19.7 6.98497L14.975 2.25997C14.675 1.95997 14.675 1.49497 14.975 1.19497C15.275 0.894971 15.74 0.894971 16.04 1.19497L21.29 6.44497C21.59 6.74497 21.59 7.20997 21.29 7.50997L16.04 12.76C15.89 12.91 15.695 12.985 15.515 12.985L15.5 13Z" fill="white"/>
+                </g>
+                <defs>
+                <clipPath id="clip0_1_1656">
+                <rect width="24" height="13.5" fill="white" transform="translate(0.5 0.25)"/>
+                </clipPath>
+                </defs>
+                </svg>
+                
+            </button>
           </div>
         </div>
       </div>
     </div>
+  </div>
 </section>
   
 <!-- Search Section -->
-<section class="relative bottom-24" style="background: linear-gradient(to bottom, 50%, #F5F6FA 50%);">
+<section class="relative bottom-24 z-10" style="background: linear-gradient(to bottom, 50%, #F5F6FA 50%);">
   <div class="bg-white rounded-2xl p-10 border w-[87%] mx-auto">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
       <!-- Recherche par nom -->
@@ -277,7 +290,7 @@
       <div *ngFor="let membre of membres" class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-300">
         <div class="flex items-center space-x-4 mb-4">
           <div class="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-            {{ getInitial(membre.nom) }}
+            <img class="w-12 h-12" *ngIf="membre.logo" [src]="'https://wakana.online/repertoire_amchams/' + membre.logo" alt="">
           </div>
           <div>
             <h3 class="text-lg font-semibold text-gray-900">{{ membre.nom }}</h3>
@@ -287,44 +300,57 @@
         
         <div class="space-y-2 mb-4">
           <div class="flex items-center text-gray-600 text-sm">
-            <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
+            <svg class="mr-2 w-4 h-4" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15.0001 7.5C15.0001 12.375 9.00012 16.5 9.00012 16.5C9.00012 16.5 3.00012 12.375 3.00012 7.5C3.00012 5.9087 3.63226 4.38258 4.75748 3.25736C5.8827 2.13214 7.40882 1.5 9.00012 1.5C10.5914 1.5 12.1175 2.13214 13.2428 3.25736C14.368 4.38258 15.0001 5.9087 15.0001 7.5Z" stroke="#D11E2B" stroke-width="1.5"/>
+              <path d="M11.2501 7.5C11.2501 8.09674 11.0131 8.66903 10.5911 9.09099C10.1692 9.51295 9.59686 9.75 9.00012 9.75C8.40338 9.75 7.83109 9.51295 7.40913 9.09099C6.98717 8.66903 6.75012 8.09674 6.75012 7.5C6.75012 6.90326 6.98717 6.33097 7.40913 5.90901C7.83109 5.48705 8.40338 5.25 9.00012 5.25C9.59686 5.25 10.1692 5.48705 10.5911 5.90901C11.0131 6.33097 11.2501 6.90326 11.2501 7.5Z" stroke="#D11E2B" stroke-width="1.5"/>
+              </svg>
+              
             {{ membre.adresse }}
           </div>
           <div class="flex items-center text-gray-600 text-sm">
-            <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-            {{ membre.email }}
+            <svg class="mr-2 w-4 h-4" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g clip-path="url(#clip0_1_542)">
+              <path d="M9 16.5C13.1421 16.5 16.5 13.1421 16.5 9C16.5 4.85786 13.1421 1.5 9 1.5C4.85786 1.5 1.5 4.85786 1.5 9C1.5 13.1421 4.85786 16.5 9 16.5Z" stroke="#D11E2B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M1.5 9H16.5M9 1.5C7.07418 3.52212 6 6.20756 6 9C6 11.7924 7.07418 14.4779 9 16.5C10.9258 14.4779 12 11.7924 12 9C12 6.20756 10.9258 3.52212 9 1.5Z" stroke="#D11E2B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+              <defs>
+              <clipPath id="clip0_1_542">
+              <rect width="18" height="18" fill="white"/>
+              </clipPath>
+              </defs>
+              </svg>
+              
+            {{ membre.siteWeb }}
           </div>
           <div class="flex items-center text-gray-600 text-sm">
-            <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-            </svg>
+            <svg class="mr-2 w-4 h-4" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M4.29977 1.53247C5.21252 0.624972 6.71552 0.786223 7.47977 1.80772L8.42627 3.07072C9.04877 3.90172 8.99327 5.06272 8.25452 5.79697L8.07602 5.97547C8.05578 6.0504 8.05372 6.12909 8.07002 6.20497C8.11727 6.51097 8.37302 7.15897 9.44402 8.22397C10.515 9.28897 11.1675 9.54397 11.478 9.59197C11.5563 9.60771 11.6371 9.6054 11.7143 9.58522L12.0203 9.28072C12.6773 8.62822 13.6853 8.50597 14.4983 8.94772L15.9308 9.72772C17.1585 10.3937 17.4683 12.0617 16.4633 13.0615L15.3975 14.1205C15.0615 14.4542 14.61 14.7325 14.0595 14.7842C12.702 14.911 9.53927 14.749 6.21452 11.4437C3.11177 8.35822 2.51627 5.66722 2.44052 4.34122C2.40302 3.67072 2.71952 3.10372 3.12302 2.70322L4.29977 1.53247ZM6.57977 2.48197C6.19952 1.97422 5.49152 1.93372 5.09252 2.33047L3.91502 3.50047C3.66752 3.74647 3.54902 4.01797 3.56402 4.27747C3.62402 5.33122 4.10402 7.75897 7.00802 10.6465C10.0545 13.675 12.8678 13.7657 13.9553 13.6637C14.1773 13.6435 14.3978 13.528 14.604 13.3232L15.669 12.2635C16.1025 11.833 16.0073 11.0485 15.3938 10.7155L13.9613 9.93622C13.5653 9.72172 13.1018 9.79222 12.8138 10.0787L12.4725 10.4185L12.075 10.0195C12.4725 10.4185 12.4718 10.4192 12.471 10.4192L12.4703 10.4207L12.468 10.423L12.4628 10.4275L12.4515 10.438C12.4199 10.4674 12.3857 10.494 12.3495 10.5175C12.2895 10.5572 12.21 10.6015 12.1103 10.6382C11.9078 10.714 11.6393 10.7545 11.3078 10.7035C10.6575 10.6037 9.79577 10.1605 8.65052 9.02197C7.50602 7.88347 7.05902 7.02697 6.95852 6.37747C6.90677 6.04597 6.94802 5.77747 7.02452 5.57497C7.06662 5.46102 7.1269 5.35465 7.20302 5.25997L7.22702 5.23372L7.23752 5.22247L7.24202 5.21797L7.24427 5.21572L7.24577 5.21422L7.46177 4.99972C7.78277 4.67947 7.82777 4.14922 7.52552 3.74497L6.57977 2.48197Z" fill="#D11E2B"/>
+              </svg>
+              
             {{ membre.telephone }}
           </div>
         </div>
         
-        <p class="text-gray-600 text-sm mb-6 line-clamp-2">
+        <!-- <p class="text-gray-600 text-sm mb-6 line-clamp-2">
           {{ membre.description }}
-        </p>
+        </p> -->
         
-        <div class="flex items-center justify-between mb-4">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            {{ membre.countryAmcham }}
-          </span>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            {{ membre.countryAmcham }}
-          </span>
-        </div>
+       
         
         <div class="flex space-x-3">
-          <button class="flex-1 border border-red-600 text-red-600 hover:bg-red-600 hover:text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-300">
+          <button class="flex-1 gap-1 flex items-center justify-center  text-[#B3343D] bg-gray-50  py-4 px-4 rounded-lg text-sm font-medium transition-colors duration-300">
+            <svg class="relative " width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3.16671 13.3332C2.80004 13.3332 2.48626 13.2027 2.22537 12.9418C1.96449 12.6809 1.83382 12.3669 1.83337 11.9998V3.99984C1.83337 3.63317 1.96404 3.31939 2.22537 3.0585C2.48671 2.79761 2.80049 2.66695 3.16671 2.6665H13.8334C14.2 2.6665 14.514 2.79717 14.7754 3.0585C15.0367 3.31984 15.1672 3.63362 15.1667 3.99984V11.9998C15.1667 12.3665 15.0363 12.6805 14.7754 12.9418C14.5145 13.2032 14.2005 13.3336 13.8334 13.3332H3.16671ZM8.50004 8.6665L3.16671 5.33317V11.9998H13.8334V5.33317L8.50004 8.6665ZM8.50004 7.33317L13.8334 3.99984H3.16671L8.50004 7.33317ZM3.16671 5.33317V3.99984V11.9998V5.33317Z" fill="#A91520"/>
+              </svg>
+              
             {{ searchTexts.contact }}
           </button>
-          <button (click)="navigateToMembreDetails(membre.id)" class="flex-1 bg-blue-900 hover:bg-blue-800 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-300">
+          <button (click)="navigateToMembreDetails(membre.id)" class="flex-1 gap-1 flex items-center justify-center bg-[#132742]  text-white py-4 px-4 rounded-lg text-sm font-medium transition-colors duration-300">
+            <svg width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13.7687 5.72416C13.7371 5.65183 13.6929 5.58569 13.6381 5.52883L9.63808 1.52883C9.58122 1.47405 9.51508 1.42981 9.44275 1.39816C9.42275 1.38883 9.40141 1.3835 9.38008 1.37616C9.32428 1.35725 9.26622 1.34582 9.20741 1.34216C9.19341 1.34083 9.18075 1.3335 9.16675 1.3335H4.50008C3.76475 1.3335 3.16675 1.9315 3.16675 2.66683V13.3335C3.16675 14.0688 3.76475 14.6668 4.50008 14.6668H12.5001C13.2354 14.6668 13.8334 14.0688 13.8334 13.3335V6.00016C13.8334 5.98616 13.8261 5.9735 13.8247 5.95883C13.8211 5.90002 13.8097 5.84196 13.7907 5.78616C13.7845 5.76483 13.7772 5.74416 13.7687 5.72416ZM11.5574 5.3335H9.83341V3.6095L11.5574 5.3335ZM4.50008 13.3335V2.66683H8.50008V6.00016C8.50008 6.17697 8.57032 6.34654 8.69534 6.47157C8.82037 6.59659 8.98994 6.66683 9.16675 6.66683H12.5001L12.5014 13.3335H4.50008Z" fill="white"/>
+              <path d="M5.83325 8.00016H11.1666V9.3335H5.83325V8.00016ZM5.83325 10.6668H11.1666V12.0002H5.83325V10.6668ZM5.83325 5.3335H7.16659V6.66683H5.83325V5.3335Z" fill="white"/>
+              </svg>
+              
             {{ searchTexts.viewProfile }}
           </button>
         </div>

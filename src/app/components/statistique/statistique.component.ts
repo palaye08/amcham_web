@@ -100,9 +100,9 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       derniereMiseAJour: {
         valeur: this.lastUpdateDate || '--/--/----',
-        croissance: '',
-        periode: '',
-        croissancePositive: true
+        croissance: this.vueProfilTotalData ? this.formatEvolution(this.vueProfilTotalData.weeklyEvolution) : '+0%',
+        periode: this.texts.sinceLastMonth,
+        croissancePositive: this.vueProfilTotalData ? this.vueProfilTotalData.weeklyEvolution >= 0 : true
       }
     };
   }
@@ -205,7 +205,7 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
         next: (data) => {
           this.vueProfilChartData = data;
           if (data.length > 0) {
-            this.lastUpdateDate = this.formatDate(data[data.length - 1].date);
+            this.lastUpdateDate = this.formatFullDate(data[data.length - 1].date);
           }
           resolve();
         },
@@ -284,7 +284,7 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
   private initLineChart(): void {
     const canvas = document.getElementById('lineChart') as HTMLCanvasElement;
     if (!canvas) {
-      console.error('Canvas lineChart non trouvé - le DOM n\'est pas encore rendu');
+      console.error('Canvas lineChart non trouvé');
       return;
     }
     
@@ -294,7 +294,6 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Préparer les données du graphique
     const labels = this.vueProfilChartData.map(d => this.formatDate(d.date));
     const dataValues = this.vueProfilChartData.map(d => d.count);
 
@@ -314,35 +313,16 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
           pointRadius: 4,
-          pointHoverRadius: 6,
-          pointHoverBackgroundColor: '#3B82F6',
-          pointHoverBorderColor: '#ffffff',
-          pointHoverBorderWidth: 2
+          pointHoverRadius: 6
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
             backgroundColor: 'rgba(15, 23, 42, 0.9)',
-            titleColor: '#ffffff',
-            bodyColor: '#ffffff',
-            borderColor: '#3B82F6',
-            borderWidth: 1,
-            cornerRadius: 6,
-            displayColors: false,
-            padding: 10,
-            titleFont: {
-              size: 12,
-              weight: 'normal'
-            },
-            bodyFont: {
-              size: 12
-            },
             callbacks: {
               title: (context) => {
                 const index = context[0].dataIndex;
@@ -358,44 +338,13 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
         scales: {
           y: {
             beginAtZero: true,
-            ticks: {
-              color: '#64748B',
-              font: {
-                size: 11,
-                family: 'Inter, system-ui, sans-serif'
-              },
-              padding: 8
-            },
-            grid: {
-              color: 'rgba(148, 163, 184, 0.15)',
-              lineWidth: 1,
-              // drawBorder: false
-            },
-            border: {
-              display: false
-            }
+            ticks: { color: '#64748B' },
+            grid: { color: 'rgba(148, 163, 184, 0.15)' }
           },
           x: {
-            ticks: {
-              color: '#64748B',
-              font: {
-                size: 10,
-                family: 'Inter, system-ui, sans-serif'
-              },
-              maxRotation: 0,
-              padding: 8
-            },
-            grid: {
-              display: false
-            },
-            border: {
-              display: false
-            }
+            ticks: { color: '#64748B' },
+            grid: { display: false }
           }
-        },
-        interaction: {
-          intersect: false,
-          mode: 'index'
         }
       }
     };
@@ -406,7 +355,7 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
   private initPieChart(): void {
     const canvas = document.getElementById('pieChart') as HTMLCanvasElement;
     if (!canvas) {
-      console.error('Canvas pieChart non trouvé - le DOM n\'est pas encore rendu');
+      console.error('Canvas pieChart non trouvé');
       return;
     }
     
@@ -424,44 +373,19 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
         labels: chronoData.map(d => d.label),
         datasets: [{
           data: chronoData.map(d => d.valeur),
-          backgroundColor: [
-            '#F97316', // Orange - Aujourd'hui
-            '#10B981', // Vert - Cette semaine  
-            '#F59E0B', // Jaune - Ce mois
-            '#3B82F6'  // Bleu - Cette année
-          ],
+          backgroundColor: ['#F97316', '#10B981', '#F59E0B', '#3B82F6'],
           borderWidth: 2,
-          borderColor: '#ffffff',
-          hoverBorderWidth: 3,
-          hoverBorderColor: '#ffffff',
-          hoverOffset: 6
+          borderColor: '#ffffff'
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
             backgroundColor: 'rgba(15, 23, 42, 0.9)',
-            titleColor: '#ffffff',
-            bodyColor: '#ffffff',
-            borderColor: 'rgba(148, 163, 184, 0.2)',
-            borderWidth: 1,
-            cornerRadius: 6,
-            displayColors: true,
-            padding: 10,
-            titleFont: {
-              size: 12,
-              weight: 'bold'
-            },
-            bodyFont: {
-              size: 12
-            },
             callbacks: {
-              title: (context) => context[0].label,
               label: (context) => {
                 const value = context.parsed;
                 const dataset = context.dataset.data as number[];
@@ -471,52 +395,11 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
               }
             }
           }
-        },
-        interaction: {
-          intersect: false
-        },
-        animation: {
-          duration: 800
-        },
-        onHover: (event, activeElements) => {
-          const canvas = event.native?.target as HTMLCanvasElement;
-          if (canvas) {
-            canvas.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
-          }
         }
       }
     };
 
     this.pieChart = new Chart(ctx, config);
-  }
-
-  // Méthodes de navigation
-  navigateToPropos(): void {
-    if (this.router.url !== '/apropos') {
-      this.router.navigate(['/apropos']);
-      this.currentRoute = '/apropos';
-    }
-  }
-
-  navigateToMedia(): void {
-    this.router.navigate(['/media']);
-    this.currentRoute = '/media';
-  }
-
-  navigateToHoraire(): void {
-    if (this.router.url !== '/horaire') {
-      this.router.navigate(['/horaire']);
-      this.currentRoute = '/horaire';
-    }
-  }
-  
-  navigateToStatistique(): void {
-    this.router.navigate(['/statistique']);
-    this.currentRoute = '/statistique';
-  }
-  
-  isActiveTab(route: string): boolean {
-    return this.currentRoute === route;
   }
 
   ngOnDestroy(): void {

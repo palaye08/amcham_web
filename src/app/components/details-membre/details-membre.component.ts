@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HeaderComponent } from "../header/header.component";
 import { LanguageService } from '../../../services/language.service';
-import { Subscription } from 'rxjs';
+import { CompanyService, Company, CompanySchedule } from '../../../services/company.service';
+import { Subscription, forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-details-membre',
@@ -18,7 +19,9 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
   currentLang = 'fr';
 
   membreId: number = 0;
-  membre: any = null;
+  membre: Company | null = null;
+  horaires: CompanySchedule[] = [];
+  isLoading = true;
 
   // Textes dynamiques
   get texts() {
@@ -97,179 +100,13 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
     };
   }
 
-  // Données simulées des membres avec traductions
-  membresData: { [key: number]: any } = {
-    1: {
-      id: 1,
-      name: 'Global Tech Solutions',
-      categoryFr: 'Technologie',
-      categoryEn: 'Technology',
-      locationFr: '123 Innovation Street, Boston, MA 02110',
-      locationEn: '123 Innovation Street, Boston, MA 02110',
-      phone: '+1 555-123-4567',
-      email: 'contact@globaltechsolutions.com',
-      website: 'www.example.us',
-      foundedYear: '2003',
-      employeesFr: '4.7 mille actifs',
-      employeesEn: '4.7 thousand employees',
-      descriptionFr: 'Global Tech Solutions est une entreprise leader dans le domaine des solutions technologiques innovantes. Nous aidons les entreprises à transformer leurs opérations grâce à des technologies de pointe et des services consultatifs de droite collaboration avec les clients pour développer des solutions sur mesure qui répondent à leurs besoins spécifiques.',
-      descriptionEn: 'Global Tech Solutions is a leading company in innovative technology solutions. We help businesses transform their operations through cutting-edge technologies and advisory services, working closely with clients to develop customized solutions that meet their specific needs.',
-      horaires: {
-        'Lundi': '09:00 - 18:00',
-        'Mardi': '09:00 - 18:00',
-        'Mercredi': '09:00 - 18:00',
-        'Jeudi': '09:00 - 18:00',
-        'Vendredi': '09:00 - 17:00',
-        'Samedi': 'Fermé',
-        'Dimanche': 'Fermé'
-      },
-      horairesEn: {
-        'Monday': '09:00 - 18:00',
-        'Tuesday': '09:00 - 18:00',
-        'Wednesday': '09:00 - 18:00',
-        'Thursday': '09:00 - 18:00',
-        'Friday': '09:00 - 17:00',
-        'Saturday': 'Closed',
-        'Sunday': 'Closed'
-      },
-      galerie: [
-        '/assets/gallery1.jpg',
-        '/assets/gallery2.jpg',
-        '/assets/gallery3.jpg'
-      ],
-      videoUrl: '/assets/presentation-video.mp4',
-      avis: [
-        {
-          id: 1,
-          nom: 'Emma Li',
-          note: 5,
-          commentaireFr: 'Excellent service client et solutions très innovantes. L\'équipe est toujours disponible pour aider et les résultats sont impressionnants.',
-          commentaireEn: 'Excellent customer service and very innovative solutions. The team is always available to help and the results are impressive.',
-          avatar: '/assets/avatar1.jpg'
-        },
-        {
-          id: 2,
-          nom: 'Maximilien Mbaye',
-          note: 5,
-          commentaireFr: 'Très satisfait de la qualité des services. J\'ai pu avoir un retour de contact sous 24h et l\'équipe connaît bien ses sujets.',
-          commentaireEn: 'Very satisfied with the quality of services. I got a response within 24 hours and the team knows their subjects well.',
-          avatar: '/assets/avatar2.jpg'
-        },
-        {
-          id: 3,
-          nom: 'Aicha Diop',
-          note: 5,
-          commentaireFr: 'Partenaire de confiance depuis plus de 3 ans. Leur expertise dans le domaine technologique est impressionnante.',
-          commentaireEn: 'Trusted partner for over 3 years. Their expertise in the technology field is impressive.',
-          avatar: '/assets/avatar3.jpg'
-        }
-      ],
-      servicesFr: [
-        'Développement d\'applications web et mobiles',
-        'Solutions cloud et infrastructure',
-        'Intelligence artificielle et machine learning',
-        'Consultation technologique',
-        'Support et maintenance'
-      ],
-      servicesEn: [
-        'Web and mobile application development',
-        'Cloud solutions and infrastructure',
-        'Artificial intelligence and machine learning',
-        'Technology consulting',
-        'Support and maintenance'
-      ],
-      certifications: [
-        'ISO 9001:2015',
-        'SOC 2 Type II',
-        'AWS Partner',
-        'Microsoft Gold Partner'
-      ]
-    },
-    2: {
-      id: 2,
-      name: 'Finance Partners International',
-      categoryFr: 'Finance',
-      categoryEn: 'Finance',
-      locationFr: 'Paris, France',
-      locationEn: 'Paris, France',
-      phone: '+33 1 23 45 67 89',
-      email: 'contact@financepartners.fr',
-      website: 'www.example.fr',
-      foundedYear: '1998',
-      employeesFr: '2.3 mille actifs',
-      employeesEn: '2.3 thousand employees',
-      descriptionFr: 'Finance Partners International est un cabinet spécialisé dans les services financiers internationaux avec plus de 20 ans d\'expérience dans le secteur bancaire et les investissements transfrontaliers.',
-      descriptionEn: 'Finance Partners International is a firm specialized in international financial services with over 20 years of experience in banking and cross-border investments.',
-      horaires: {
-        'Lundi': '08:30 - 18:30',
-        'Mardi': '08:30 - 18:30',
-        'Mercredi': '08:30 - 18:30',
-        'Jeudi': '08:30 - 18:30',
-        'Vendredi': '08:30 - 17:30',
-        'Samedi': 'Fermé',
-        'Dimanche': 'Fermé'
-      },
-      horairesEn: {
-        'Monday': '08:30 - 18:30',
-        'Tuesday': '08:30 - 18:30',
-        'Wednesday': '08:30 - 18:30',
-        'Thursday': '08:30 - 18:30',
-        'Friday': '08:30 - 17:30',
-        'Saturday': 'Closed',
-        'Sunday': 'Closed'
-      },
-      galerie: [
-        '/assets/finance-gallery1.jpg',
-        '/assets/finance-gallery2.jpg',
-        '/assets/finance-gallery3.jpg'
-      ],
-      videoUrl: '/assets/finance-presentation.mp4',
-      avis: [
-        {
-          id: 1,
-          nom: 'Pierre Dubois',
-          note: 5,
-          commentaireFr: 'Service exceptionnel et expertise reconnue dans le domaine financier. Équipe très professionnelle.',
-          commentaireEn: 'Exceptional service and recognized expertise in the financial field. Very professional team.',
-          avatar: '/assets/avatar4.jpg'
-        },
-        {
-          id: 2,
-          nom: 'Marie Leclerc',
-          note: 4,
-          commentaireFr: 'Très bon accompagnement pour nos investissements internationaux.',
-          commentaireEn: 'Very good support for our international investments.',
-          avatar: '/assets/avatar5.jpg'
-        }
-      ],
-      servicesFr: [
-        'Conseil en investissements',
-        'Gestion de patrimoine',
-        'Services bancaires internationaux',
-        'Financement de projets',
-        'Analyse financière'
-      ],
-      servicesEn: [
-        'Investment advisory',
-        'Wealth management',
-        'International banking services',
-        'Project financing',
-        'Financial analysis'
-      ],
-      certifications: [
-        'AMF (Autorité des Marchés Financiers)',
-        'CFA Institute Member',
-        'ISO 27001'
-      ]
-    }
-  };
-
+  // Données simulées pour les sections non disponibles dans l'API
   membresSimilaires = [
     {
       id: 7,
       name: 'Global Tech Solutions',
-      categoryFr: 'TechAugai',
-      categoryEn: 'TechAugai',
+      categoryFr: 'Technologie',
+      categoryEn: 'Technology',
       locationFr: 'Boston, États-Unis',
       locationEn: 'Boston, USA',
       phone: '+1 555-123-4567',
@@ -278,8 +115,8 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
     {
       id: 8,
       name: 'Finrex Capital',
-      categoryFr: 'TechAugai',
-      categoryEn: 'TechAugai',
+      categoryFr: 'Finance',
+      categoryEn: 'Finance',
       locationFr: 'Paris, France',
       locationEn: 'Paris, France',
       phone: '+33 1 34 56 78 90',
@@ -297,10 +134,61 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
     }
   ];
 
+  avisSimules = [
+    {
+      id: 1,
+      nom: 'Emma Li',
+      note: 5,
+      commentaireFr: 'Excellent service client et solutions très innovantes. L\'équipe est toujours disponible pour aider et les résultats sont impressionnants.',
+      commentaireEn: 'Excellent customer service and very innovative solutions. The team is always available to help and the results are impressive.',
+      avatar: '/assets/avatar1.jpg'
+    },
+    {
+      id: 2,
+      nom: 'Maximilien Mbaye',
+      note: 5,
+      commentaireFr: 'Très satisfait de la qualité des services. J\'ai pu avoir un retour de contact sous 24h et l\'équipe connaît bien ses sujets.',
+      commentaireEn: 'Very satisfied with the quality of services. I got a response within 24 hours and the team knows their subjects well.',
+      avatar: '/assets/avatar2.jpg'
+    },
+    {
+      id: 3,
+      nom: 'Aicha Diop',
+      note: 5,
+      commentaireFr: 'Partenaire de confiance depuis plus de 3 ans. Leur expertise dans le domaine technologique est impressionnante.',
+      commentaireEn: 'Trusted partner for over 3 years. Their expertise in the technology field is impressive.',
+      avatar: '/assets/avatar3.jpg'
+    }
+  ];
+
+  certificationsSimules = [
+    'ISO 9001:2015',
+    'SOC 2 Type II',
+    'AWS Partner',
+    'Microsoft Gold Partner'
+  ];
+
+  servicesSimulesFr = [
+    'Développement d\'applications web et mobiles',
+    'Solutions cloud et infrastructure',
+    'Intelligence artificielle et machine learning',
+    'Consultation technologique',
+    'Support et maintenance'
+  ];
+
+  servicesSimulesEn = [
+    'Web and mobile application development',
+    'Cloud solutions and infrastructure',
+    'Artificial intelligence and machine learning',
+    'Technology consulting',
+    'Support and maintenance'
+  ];
+
   constructor(
     public route: ActivatedRoute, 
     public router: Router,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private companyService: CompanyService
   ) { }
 
   ngOnInit(): void {
@@ -325,21 +213,67 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
   }
 
   loadMembreDetails() {
-    this.membre = this.membresData[this.membreId];
-    if (!this.membre) {
-      this.router.navigate(['/membres']);
-    }
+    this.isLoading = true;
+    
+    // Charger les données du membre et ses horaires en parallèle
+    forkJoin({
+      company: this.companyService.getCompanyById(this.membreId),
+      schedules: this.companyService.getHoraire(this.membreId)
+    }).subscribe({
+      next: ({ company, schedules }) => {
+        this.membre = company;
+        this.horaires = schedules;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des données du membre:', error);
+        this.isLoading = false;
+        this.router.navigate(['/membres']);
+      }
+    });
   }
 
   // Méthode utilitaire pour obtenir la propriété traduite
-  getTranslatedProperty(membre: any, property: string): string {
-    const langSuffix = this.currentLang === 'fr' ? 'Fr' : 'En';
-    return membre[`${property}${langSuffix}`] || membre[property] || '';
+  getTranslatedProperty(property: string): string {
+    if (!this.membre) return '';
+    
+    // Pour les propriétés qui n'ont pas de traduction, retourner directement la valeur
+    return this.membre[property as keyof Company] as string || '';
   }
 
-  // Méthode pour obtenir les horaires traduits
-  getTranslatedHoraires(): any {
-    return this.currentLang === 'fr' ? this.membre.horaires : this.membre.horairesEn;
+  // Méthode pour obtenir les horaires formatés
+  getFormattedHoraires(): any {
+    const horairesObj: any = {};
+    
+    this.horaires.forEach(schedule => {
+      const dayKey = this.getTranslatedDay(schedule.dayOfWeek);
+      if (schedule.closed) {
+        horairesObj[dayKey] = this.texts.closed;
+      } else if (schedule.openingTime && schedule.closingTime) {
+        horairesObj[dayKey] = `${schedule.openingTime} - ${schedule.closingTime}`;
+      } else {
+        horairesObj[dayKey] = this.texts.closed;
+      }
+    });
+    
+    return horairesObj;
+  }
+
+  // Méthode pour traduire les jours de la semaine
+  getTranslatedDay(day: string): string {
+    const daysMap: { [key: string]: { fr: string, en: string } } = {
+      'MONDAY': { fr: 'Lundi', en: 'Monday' },
+      'TUESDAY': { fr: 'Mardi', en: 'Tuesday' },
+      'WEDNESDAY': { fr: 'Mercredi', en: 'Wednesday' },
+      'THURSDAY': { fr: 'Jeudi', en: 'Thursday' },
+      'FRIDAY': { fr: 'Vendredi', en: 'Friday' },
+      'SATURDAY': { fr: 'Samedi', en: 'Saturday' },
+      'SUNDAY': { fr: 'Dimanche', en: 'Sunday' }
+    };
+    
+    return this.currentLang === 'fr' 
+      ? daysMap[day]?.fr || day 
+      : daysMap[day]?.en || day;
   }
 
   // Méthode pour obtenir les jours de la semaine traduits
@@ -349,12 +283,29 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
       ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   }
 
+  // Méthode pour obtenir les services (simulés pour l'instant)
+  getServices(): string[] {
+    return this.currentLang === 'fr' ? this.servicesSimulesFr : this.servicesSimulesEn;
+  }
+
+  // Méthode pour obtenir l'adresse complète
+  getCompleteAddress(): string {
+    if (!this.membre) return '';
+    
+    const addressParts = [this.membre.address, this.membre.city, this.membre.country]
+      .filter(part => part && part.trim() !== '');
+    
+    return addressParts.join(', ');
+  }
+
   laisserAvis() {
-    console.log('Laisser un avis pour:', this.membre.name);
+    console.log('Laisser un avis pour:', this.membre?.name);
+    // Implémenter la logique pour laisser un avis
   }
 
   contacter() {
-    console.log('Contacter:', this.membre.name);
+    console.log('Contacter:', this.membre?.name);
+    // Implémenter la logique de contact
   }
 
   voirFiche(membreId: number) {
@@ -370,19 +321,34 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
   }
 
   openMap() {
-    const encodedAddress = encodeURIComponent(this.getTranslatedProperty(this.membre, 'location'));
+    if (!this.membre) return;
+    
+    const encodedAddress = encodeURIComponent(this.getCompleteAddress());
     window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank');
   }
 
   callPhone() {
-    window.location.href = `tel:${this.membre.phone}`;
+    if (!this.membre) return;
+    window.location.href = `tel:${this.membre.telephone}`;
   }
 
   sendEmail() {
+    if (!this.membre) return;
     window.location.href = `mailto:${this.membre.email}`;
   }
 
   visitWebsite() {
-    window.open(`https://${this.membre.website}`, '_blank');
+    if (!this.membre) return;
+    
+    let website = this.membre.webLink;
+    if (!website.startsWith('http://') && !website.startsWith('https://')) {
+      website = 'https://' + website;
+    }
+    window.open(website, '_blank');
+  }
+
+  // Méthode pour obtenir l'initiale du nom de l'entreprise
+  getInitial(name: string): string {
+    return name ? name.charAt(0).toUpperCase() : '';
   }
 }

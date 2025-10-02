@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { LanguageService } from '../../../services/language.service';
+import { CompanyService, SearchStats, TotalCompany } from '../../../services/company.service';
 import { Subscription } from 'rxjs';
 
 export interface CardStats {
@@ -25,21 +26,24 @@ export interface CardStats {
   styleUrls: ['./card-state.component.css']
 })
 export class CardStateComponent implements OnInit, OnDestroy {
-  @Input() stats: CardStats = {
-    totalMembers: 126,
-    memberGrowth: 12,
-    searches: 1243,
-    searchGrowth: 5,
-    adClicks: 348,
-    clickGrowth: 18
-  };
+  // Les stats par défaut ne sont plus fixes, elles seront remplacées par les données dynamiques
+  @Input() stats: CardStats = {};
 
   @Input() type: 'members' | 'announcements'| 'banners' | 'amchams' | 'categories' | 'secteurs' | 'statics' = 'members';
 
   private langSubscription!: Subscription;
   currentLang = 'fr';
+  loading = false;
+  error = '';
 
-  constructor(private languageService: LanguageService) {}
+  // Données dynamiques
+  searchStats: SearchStats | null = null;
+  totalCompanyStats: TotalCompany | null = null;
+
+  constructor(
+    private languageService: LanguageService,
+    private companyService: CompanyService
+  ) {}
 
   ngOnInit(): void {
     this.langSubscription = this.languageService.currentLang$.subscribe(lang => {
@@ -47,6 +51,41 @@ export class CardStateComponent implements OnInit, OnDestroy {
     });
     
     this.currentLang = this.languageService.getCurrentLanguage();
+    
+    // Charger les données dynamiques pour le type 'members'
+    if (this.type === 'members') {
+      this.loadDynamicStats();
+    }
+  }
+
+  /**
+   * Charger les statistiques dynamiques depuis l'API
+   */
+  private loadDynamicStats(): void {
+    this.loading = true;
+    this.error = '';
+
+    // Charger les deux statistiques en parallèle
+    Promise.all([
+      this.companyService.getSearchStats().toPromise(),
+      this.companyService.getTotalCompanies().toPromise()
+    ]).then(([searchStats, totalCompanyStats]) => {
+      if (searchStats) {
+        this.searchStats = searchStats;
+        console.log('Statistiques de recherche chargées:', this.searchStats);
+      }
+      
+      if (totalCompanyStats) {
+        this.totalCompanyStats = totalCompanyStats;
+        console.log('Statistiques totales des entreprises chargées:', this.totalCompanyStats);
+      }
+      
+      this.loading = false;
+    }).catch(error => {
+      console.error('Erreur lors du chargement des statistiques:', error);
+      this.error = 'Erreur lors du chargement des données';
+      this.loading = false;
+    });
   }
 
   ngOnDestroy(): void {
@@ -81,25 +120,30 @@ export class CardStateComponent implements OnInit, OnDestroy {
       sinceLastMonth: 'depuis le mois dernier',
       searches: 'Recherches',
       sinceLastWeek: 'depuis la semaine dernière',
-      adClicks: 'Clics sur publicités'
+      adClicks: 'Clics sur publicités',
+      loading: 'Chargement...',
+      error: 'Erreur de chargement'
     } : {
       totalMembers: 'Total Members',
       sinceLastMonth: 'since last month',
       searches: 'Searches',
       sinceLastWeek: 'since last week',
-      adClicks: 'Ad Clicks'
+      adClicks: 'Ad Clicks',
+      loading: 'Loading...',
+      error: 'Loading error'
     };
   }
 
-  // Valeurs par défaut pour les stats si non fournies
+  // Valeurs calculées en priorisant les données dynamiques
   get computedStats() {
+    // Valeurs par défaut si aucune donnée n'est disponible
     const defaultStats = {
-      totalMembers: 126,
-      memberGrowth: 12,
-      searches: 1243,
-      searchGrowth: 5,
-      adClicks: 348,
-      clickGrowth: 18,
+      totalMembers: 0,
+      memberGrowth: 0,
+      searches: 0,
+      searchGrowth: 0,
+      adClicks: 348, // Fixe pour l'instant
+      clickGrowth: 18, // Fixe pour l'instant
       totalAnnouncements: 45,
       announcementGrowth: 8,
       publishedAnnouncements: 32,
@@ -107,7 +151,27 @@ export class CardStateComponent implements OnInit, OnDestroy {
       draftAnnouncements: 13
     };
 
-    return { ...defaultStats, ...this.stats };
+    // Fusionner dans l'ordre de priorité :
+    // 1. Données dynamiques (si disponibles)
+    // 2. Données passées en input
+    // 3. Valeurs par défaut
+
+    const mergedStats = { ...defaultStats, ...this.stats };
+
+    // Remplacer par les données dynamiques si disponibles
+    if (this.type === 'members') {
+      if (this.totalCompanyStats) {
+        mergedStats.totalMembers = this.totalCompanyStats.totalCompanies;
+        mergedStats.memberGrowth = this.totalCompanyStats.percentageChange;
+      }
+      
+      if (this.searchStats) {
+        mergedStats.searches = this.searchStats.total;
+        mergedStats.searchGrowth = this.searchStats.weeklyEvolution;
+      }
+    }
+
+    return mergedStats;
   }
 
   // Détermine le texte pour le pourcentage de croissance selon le type
@@ -115,14 +179,39 @@ export class CardStateComponent implements OnInit, OnDestroy {
     if (this.type === 'announcements') {
       return this.texts.awaitingPublication || '';
     }
-    return this.stats.clickGrowth !== undefined ? 
-      `+${this.computedStats.clickGrowth}% ${this.texts.sinceLastMonth}` : 
-      `+${this.computedStats.publishedGrowth}% ${this.texts.sinceLastWeek}`;
+    return `+${this.computedStats.clickGrowth}% ${this.texts.sinceLastMonth}`;
   }
 
   // Formate les nombres avec séparateurs
   formatNumber(value: number | undefined): string {
-    if (value === undefined) return '0';
-    return value.toLocaleString();
+    if (value === undefined || value === null) return '0';
+    
+    if (this.currentLang === 'fr') {
+      return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    } else {
+      return value.toLocaleString('en-US');
+    }
+  }
+
+  // Obtenir la classe CSS pour l'indicateur de croissance
+  getGrowthClass(growth: number | undefined): string {
+    if (growth === undefined || growth === null) return 'text-emerald-600';
+    
+    return growth >= 0 ? 'text-emerald-600' : 'text-red-600';
+  }
+
+  // Formater le pourcentage de croissance
+  formatGrowth(growth: number | undefined): string {
+    if (growth === undefined || growth === null) return '+0%';
+    
+    const sign = growth >= 0 ? '+' : '';
+    return `${sign}${growth}%`;
+  }
+
+  // Recharger les données
+  reloadData(): void {
+    if (this.type === 'members') {
+      this.loadDynamicStats();
+    }
   }
 }

@@ -9,8 +9,7 @@
       <p class="text-gray-600">{{ texts.followPerformance }}</p>
     </div>
 
-    <app-card-state [type]="'statics'"></app-card-state>
-
+    <app-card-state [type]="'members'"></app-card-state>
 
     <!-- Graphiques principaux -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -18,7 +17,24 @@
       <!-- Visites par jour -->
       <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ texts.visitsPerDay }}</h3>
-        <div class="h-64 relative">
+        
+        <!-- État de chargement -->
+        <div *ngIf="isLoadingVisits" class="h-64 flex items-center justify-center">
+          <div class="text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-gray-600">{{ texts.loading }}</p>
+          </div>
+        </div>
+
+        <!-- Erreur -->
+        <div *ngIf="visitsError && !isLoadingVisits" class="h-64 flex items-center justify-center">
+          <div class="text-center text-red-600">
+            {{ visitsError }}
+          </div>
+        </div>
+
+        <!-- Graphique -->
+        <div *ngIf="!isLoadingVisits && !visitsError" class="h-64 relative">
           <canvas #visitsChart></canvas>
         </div>
       </div>
@@ -47,42 +63,58 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       
       <!-- Membres par secteur -->
-    <!-- Membres par secteur -->
-<div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-  <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ texts.membersBySector }}</h3>
-  
-  <!-- État de chargement -->
-  <div *ngIf="isLoadingSectors" class="text-center py-8">
-    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-    <p class="mt-2 text-gray-600">{{ texts.loading }}</p>
-  </div>
-
-  <!-- Erreur -->
-  <div *ngIf="sectorError && !isLoadingSectors" class="text-center py-8 text-red-600">
-    {{ sectorError }}
-  </div>
-
-  <!-- Données chargées -->
-  <div *ngIf="!isLoadingSectors && !sectorError" class="flex flex-col lg:flex-row items-center">
-    <div class="h-64 w-64 relative mb-4 lg:mb-0">
-      <canvas #sectorsChart></canvas>
-    </div>
-    <div class="lg:ml-6 space-y-2 text-sm w-full max-w-xs">
-      <div *ngFor="let sector of sectorData" class="flex items-center justify-between">
-        <div class="flex items-center">
-          <div class="w-3 h-3 rounded-full mr-2" [style.background]="sector.color"></div>
-          <span class="text-gray-700">{{ sector.sectorName }}</span>
+      <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ texts.membersBySector }}</h3>
+        
+        <!-- État de chargement -->
+        <div *ngIf="isLoadingSectors" class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p class="mt-2 text-gray-600">{{ texts.loading }}</p>
         </div>
-        <span class="text-gray-600">{{ companySectorService.formatPercentage(sector.percentage) }}</span>
+
+        <!-- Erreur -->
+        <div *ngIf="sectorError && !isLoadingSectors" class="text-center py-8 text-red-600">
+          {{ sectorError }}
+        </div>
+
+        <!-- Données chargées -->
+        <div *ngIf="!isLoadingSectors && !sectorError" class="flex flex-col lg:flex-row items-center">
+          <div class="h-64 w-64 relative mb-4 lg:mb-0">
+            <canvas #sectorsChart></canvas>
+          </div>
+          <div class="lg:ml-6 space-y-2 text-sm w-full max-w-xs">
+            <div *ngFor="let sector of sectorData" class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 rounded-full mr-2" [style.background]="sector.color"></div>
+                <span class="text-gray-700">{{ sector.sectorName }}</span>
+              </div>
+              <span class="text-gray-600">{{ companySectorService.formatPercentage(sector.percentage) }}</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
 
       <!-- Clics sur bannières -->
       <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ texts.bannerClicks }}</h3>
-        <div class="h-64 relative">
+        
+        <!-- État de chargement -->
+        <div *ngIf="isLoadingBannerClicks" class="h-64 flex items-center justify-center">
+          <div class="text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-gray-600">{{ texts.loading }}</p>
+          </div>
+        </div>
+
+        <!-- Erreur -->
+        <div *ngIf="bannerClicksError && !isLoadingBannerClicks" class="h-64 flex items-center justify-center">
+          <div class="text-center text-red-600">
+            {{ bannerClicksError }}
+          </div>
+        </div>
+
+        <!-- Graphique -->
+        <div *ngIf="!isLoadingBannerClicks && !bannerClicksError" class="h-64 relative">
           <canvas #bannerClicksChart></canvas>
         </div>
       </div>

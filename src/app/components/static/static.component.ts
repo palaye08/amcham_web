@@ -39,15 +39,9 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
   };
 
   // Données pour les graphiques
-  visitsData = [
-    { date: '02/05', visits: 300 },
-    { date: '04/05', visits: 420 },
-    { date: '06/05', visits: 280 },
-    { date: '08/05', visits: 350 },
-    { date: '10/05', visits: 450 },
-    { date: '12/05', visits: 480 },
-    { date: '14/05', visits: 520 }
-  ];
+  visitsData: { date: string; visits: number }[] = [];
+  isLoadingVisits = true;
+  visitsError = '';
 
   popularSearches = [
     { term: 'Technologie', count: 180 },
@@ -63,12 +57,10 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
   isLoadingSectors = true;
   sectorError = '';
 
-  bannerClicksData = [
-    { name: 'Conférence annuelle', clicks: 135 },
-    { name: 'Forum économique', clicks: 85 },
-    { name: 'Innovation Summit', clicks: 75 },
-    { name: 'Tech Conference', clicks: 65 }
-  ];
+  // Données dynamiques pour les clics sur bannières
+  bannerClicksData: { name: string; clicks: number }[] = [];
+  isLoadingBannerClicks = true;
+  bannerClicksError = '';
 
   // Textes dynamiques
   get texts() {
@@ -145,8 +137,10 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     
     this.currentLang = this.languageService.getCurrentLanguage();
     
-    // Charger les données des secteurs
+    // Charger toutes les données
     this.loadSectorData();
+    this.loadVisitsKpi();
+    this.loadClicksKpi();
   }
 
   ngAfterViewInit(): void {
@@ -181,7 +175,6 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
         this.sectorData = this.companySectorService.sortSectorsByPercentage(data);
         this.isLoadingSectors = false;
         
-        // Recréer le graphique des secteurs avec les nouvelles données
         setTimeout(() => {
           this.updateSectorsChart();
         }, 100);
@@ -194,12 +187,100 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
+  /**
+   * Charger les données des visites par jour depuis l'API
+   */
+  loadVisitsKpi(): void {
+    this.isLoadingVisits = true;
+    this.visitsError = '';
+
+    this.companySectorService.getVisitByDay().subscribe({
+      next: (data) => {
+        this.visitsData = data.map(visit => ({
+          date: visit.date,
+          visits: visit.number
+        }));
+        this.isLoadingVisits = false;
+        
+        setTimeout(() => {
+          this.updateVisitsChart();
+        }, 100);
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des visites par jour:', error);
+        this.visitsError = this.texts.errorLoading;
+        this.isLoadingVisits = false;
+      }
+    });
+  }
+
+  /**
+   * Charger les données des clics sur bannières depuis l'API
+   */
+  loadClicksKpi(): void {
+    this.isLoadingBannerClicks = true;
+    this.bannerClicksError = '';
+
+    this.companySectorService.getClicksKpi().subscribe({
+      next: (data) => {
+        this.bannerClicksData = data.map(kpi => ({
+          name: kpi.title || 'Unknown',
+          clicks: kpi.clicks || 0
+        }));
+        this.isLoadingBannerClicks = false;
+        
+        setTimeout(() => {
+          this.updateBannerClicksChart();
+        }, 100);
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des clics sur les bannières:', error);
+        this.bannerClicksError = this.texts.errorLoading;
+        this.isLoadingBannerClicks = false;
+      }
+    });
+  }
+
   private createVisitsChart(): void {
     if (!this.visitsChart?.nativeElement) return;
 
     const ctx = this.visitsChart.nativeElement.getContext('2d');
     if (!ctx) return;
 
+    if (this.isLoadingVisits || this.visitsData.length === 0) {
+      this.createEmptyVisitsChart(ctx);
+      return;
+    }
+
+    this.createDynamicVisitsChart(ctx);
+  }
+
+  private createEmptyVisitsChart(ctx: CanvasRenderingContext2D): void {
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [this.texts.loading],
+        datasets: [{
+          data: [0],
+          borderColor: '#E5E7EB',
+          backgroundColor: 'rgba(229, 231, 235, 0.1)',
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        }
+      }
+    });
+
+    this.chartInstances.push(chart);
+  }
+
+  private createDynamicVisitsChart(ctx: CanvasRenderingContext2D): void {
     const chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -256,7 +337,6 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     const ctx = this.sectorsChart.nativeElement.getContext('2d');
     if (!ctx) return;
 
-    // Si les données ne sont pas encore chargées, créer un graphique vide
     if (this.isLoadingSectors || this.sectorData.length === 0) {
       this.createEmptySectorsChart(ctx);
       return;
@@ -341,14 +421,43 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     const ctx = this.bannerClicksChart.nativeElement.getContext('2d');
     if (!ctx) return;
 
-    const bannerLabels = this.currentLang === 'fr' 
-      ? this.bannerClicksData.map(d => d.name)
-      : ['Annual Conference', 'Economic Forum', 'Innovation Summit', 'Tech Conference'];
+    if (this.isLoadingBannerClicks || this.bannerClicksData.length === 0) {
+      this.createEmptyBannerClicksChart(ctx);
+      return;
+    }
 
+    this.createDynamicBannerClicksChart(ctx);
+  }
+
+  private createEmptyBannerClicksChart(ctx: CanvasRenderingContext2D): void {
     const chart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: bannerLabels,
+        labels: [this.texts.loading],
+        datasets: [{
+          data: [0],
+          backgroundColor: '#E5E7EB',
+          borderWidth: 0,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        }
+      }
+    });
+
+    this.chartInstances.push(chart);
+  }
+
+  private createDynamicBannerClicksChart(ctx: CanvasRenderingContext2D): void {
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: this.bannerClicksData.map(d => d.name),
         datasets: [{
           data: this.bannerClicksData.map(d => d.clicks),
           backgroundColor: '#1E40AF',
@@ -392,10 +501,30 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Mettre à jour le graphique des secteurs avec les données dynamiques
+   * Mettre à jour le graphique des visites
+   */
+  private updateVisitsChart(): void {
+    const visitsChartIndex = this.chartInstances.findIndex(chart => 
+      chart.canvas === this.visitsChart?.nativeElement
+    );
+    
+    if (visitsChartIndex !== -1) {
+      this.chartInstances[visitsChartIndex].destroy();
+      this.chartInstances.splice(visitsChartIndex, 1);
+    }
+
+    if (this.visitsChart?.nativeElement) {
+      const ctx = this.visitsChart.nativeElement.getContext('2d');
+      if (ctx) {
+        this.createDynamicVisitsChart(ctx);
+      }
+    }
+  }
+
+  /**
+   * Mettre à jour le graphique des secteurs
    */
   private updateSectorsChart(): void {
-    // Trouver et détruire l'ancien graphique des secteurs
     const sectorChartIndex = this.chartInstances.findIndex(chart => 
       chart.canvas === this.sectorsChart?.nativeElement
     );
@@ -405,7 +534,6 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
       this.chartInstances.splice(sectorChartIndex, 1);
     }
 
-    // Recréer le graphique avec les nouvelles données
     if (this.sectorsChart?.nativeElement) {
       const ctx = this.sectorsChart.nativeElement.getContext('2d');
       if (ctx) {
@@ -414,14 +542,33 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
+  /**
+   * Mettre à jour le graphique des clics sur bannières
+   */
+  private updateBannerClicksChart(): void {
+    const bannerChartIndex = this.chartInstances.findIndex(chart => 
+      chart.canvas === this.bannerClicksChart?.nativeElement
+    );
+    
+    if (bannerChartIndex !== -1) {
+      this.chartInstances[bannerChartIndex].destroy();
+      this.chartInstances.splice(bannerChartIndex, 1);
+    }
+
+    if (this.bannerClicksChart?.nativeElement) {
+      const ctx = this.bannerClicksChart.nativeElement.getContext('2d');
+      if (ctx) {
+        this.createDynamicBannerClicksChart(ctx);
+      }
+    }
+  }
+
   private updateChartsLanguage(): void {
-    // Détruire les graphiques existants
     this.chartInstances.forEach(chart => {
       chart.destroy();
     });
     this.chartInstances = [];
 
-    // Recréer les graphiques avec les nouvelles langues
     setTimeout(() => {
       this.createVisitsChart();
       this.createSectorsChart();
@@ -448,14 +595,8 @@ export class StaticComponent implements OnInit, OnDestroy, AfterViewInit {
     return termMap[term as keyof typeof termMap] || term;
   }
 
-  /**
-   * Obtenir le nombre total de membres basé sur les données des secteurs
-   */
   getTotalMembersFromSectors(): number {
     if (this.sectorData.length === 0) return this.stats.totalMembers;
-    
-    // Simuler un nombre total basé sur les pourcentages
-    // Dans une vraie application, vous auriez le nombre réel depuis l'API
     return Math.round(this.stats.totalMembers * (this.sectorData.reduce((sum, sector) => sum + sector.percentage, 0) / 100));
   }
 }

@@ -4,21 +4,9 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Router } from '@angular/router';
 import { HeaderAdminComponent } from "../header-admin/header-admin.component";
 import { LanguageService } from '../../../services/language.service';
+import { BanniereService, Banniere, BanniereFormData } from '../../../services/banniere.service';
 import { Subscription } from 'rxjs';
 import { CardStateComponent } from "../card-state/card-state.component";
-
-interface Banniere {
-  id: number;
-  titre: string;
-  description: string;
-  lien: string;
-  statut: 'Actif' | 'Expiré' | 'En attente' | 'Active' | 'Expired' | 'Pending';
-  dateDebut: string;
-  dateFin: string;
-  imageWeb: string;
-  imageMobile: string;
-  permanent: boolean;
-}
 
 @Component({
   selector: 'app-banniere',
@@ -30,56 +18,31 @@ interface Banniere {
 export class BanniereComponent implements OnInit, OnDestroy {
   showAddBanniereModal = false;
   banniereForm!: FormGroup;
-  bannieres: Banniere[] = [
-    {
-      id: 1,
-      titre: 'Sélectionnées d\'investissement',
-      description: 'Conférence annuelle AmCham',
-      lien: 'https://example.com/investissement',
-      statut: 'Actif',
-      dateDebut: '01/01/2024',
-      dateFin: '31/12/2024',
-      imageWeb: 'banniere-web-1.jpg',
-      imageMobile: 'banniere-mobile-1.jpg',
-      permanent: false
-    },
-    {
-      id: 2,
-      titre: 'Programme de partenariat',
-      description: 'Opportunités de collaboration',
-      lien: 'https://example.com/partenariat',
-      statut: 'Actif',
-      dateDebut: '15/02/2024',
-      dateFin: '15/08/2024',
-      imageWeb: 'banniere-web-2.jpg',
-      imageMobile: 'banniere-mobile-2.jpg',
-      permanent: false
-    },
-    {
-      id: 3,
-      titre: 'Événement spécial',
-      description: 'Networking et business',
-      lien: 'https://example.com/evenement',
-      statut: 'Expiré',
-      dateDebut: '01/03/2024',
-      dateFin: '30/04/2024',
-      imageWeb: 'banniere-web-3.jpg',
-      imageMobile: 'banniere-mobile-3.jpg',
-      permanent: false
-    }
-  ];
-
-  filteredBannieres: Banniere[] = [...this.bannieres];
+  bannieres: Banniere[] = [];
+  filteredBannieres: Banniere[] = [];
   selectedStatus = 'all';
   searchTerm = '';
+  editingBanniereId: number | null = null;
   currentRoute: string;
   private langSubscription!: Subscription;
   currentLang = 'fr';
+  loading = false;
+  error = '';
+
+  selectedEditMobileImage: File | null = null;
+  editingBanniereMobileImageName: string = '';
+  selectedEditWebImage: File | null = null;
+  editingBanniereWebImageName: string = '';
+  editingBanniere: Banniere | null = null;
+
+  // Fichiers sélectionnés pour l'upload
+  selectedWebImage: File | null = null;
+  selectedMobileImage: File | null = null;
 
   // Statistiques calculées
   get stats() {
     const totalBannieres = this.bannieres.length;
-    const activeBannieres = this.bannieres.filter(b => b.statut === 'Actif' || b.statut === 'Active').length;
+    const activeBannieres = this.bannieres.filter(b => this.isBanniereActive(b)).length;
     
     const searches = 1243;
     const lastWeekSearches = Math.floor(searches * 0.05);
@@ -120,6 +83,7 @@ export class BanniereComponent implements OnInit, OnDestroy {
       status: 'Statut',
       startDate: 'Date de début',
       endDate: 'Date de fin',
+      permanent: 'Permanent',
       actions: 'Actions',
       active: 'Actif',
       expired: 'Expiré',
@@ -128,7 +92,6 @@ export class BanniereComponent implements OnInit, OnDestroy {
       bannerTitle: 'Titre',
       bannerDescription: 'Description',
       websiteLink: 'Lien vers un site web',
-      permanent: 'Permanent',
       startDateRequired: 'Date de début',
       endDateRequired: 'Date de fin',
       webImage: 'Image (WEB)',
@@ -144,10 +107,15 @@ export class BanniereComponent implements OnInit, OnDestroy {
       dateFormat: 'jj/mm/aaaa',
       view: 'Voir',
       edit: 'Modifier',
+      delete: 'Supprimer',
       partnership: 'Partenariat',
       investmentSelection: 'Sélectionnées d\'investissement',
       annualConference: 'Conférence annuelle AmCham',
-      partnershipProgram: 'Programme de partenariat'
+      partnershipProgram: 'Programme de partenariat',
+      loading: 'Chargement des bannières...',
+      error: 'Erreur lors du chargement des bannières',
+      yes: 'Oui',
+      no: 'Non'
     } : {
       bannerManagement: 'Banner Management',
       totalBanners: 'Total Banners',
@@ -165,6 +133,7 @@ export class BanniereComponent implements OnInit, OnDestroy {
       status: 'Status',
       startDate: 'Start Date',
       endDate: 'End Date',
+      permanent: 'Permanent',
       actions: 'Actions',
       active: 'Active',
       create:'Saved', 
@@ -174,7 +143,6 @@ export class BanniereComponent implements OnInit, OnDestroy {
       bannerTitle: 'Title',
       bannerDescription: 'Description',
       websiteLink: 'Website Link',
-      permanent: 'Permanent',
       startDateRequired: 'Start Date',
       endDateRequired: 'End Date',
       webImage: 'Image (WEB)',
@@ -190,17 +158,23 @@ export class BanniereComponent implements OnInit, OnDestroy {
       dateFormat: 'dd/mm/yyyy',
       view: 'View',
       edit: 'Edit',
+      delete: 'Delete',
       partnership: 'Partnership',
       investmentSelection: 'Investment Selection',
       annualConference: 'Annual AmCham Conference',
-      partnershipProgram: 'Partnership Program'
+      partnershipProgram: 'Partnership Program',
+      loading: 'Loading banners...',
+      error: 'Error loading banners',
+      yes: 'Yes',
+      no: 'No'
     };
   }
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private banniereService: BanniereService
   ) {
     this.currentRoute = this.router.url;
     this.initializeForm();
@@ -209,11 +183,10 @@ export class BanniereComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.langSubscription = this.languageService.currentLang$.subscribe(lang => {
       this.currentLang = lang;
-      this.updateBannieresLanguage();
     });
     
     this.currentLang = this.languageService.getCurrentLanguage();
-    this.updateBannieresLanguage();
+    this.loadBannieres();
   }
 
   ngOnDestroy(): void {
@@ -222,38 +195,36 @@ export class BanniereComponent implements OnInit, OnDestroy {
     }
   }
 
-  private initializeForm(): void {
-    this.banniereForm = this.fb.group({
-      titre: ['', [Validators.required]],
-      description: [''],
-      lien: ['', [Validators.required]],
-      permanent: [false],
-      dateDebut: ['', [Validators.required]],
-      dateFin: [''],
-      imageWeb: [''],
-      imageMobile: ['']
+  /**
+   * Charger les bannières depuis l'API
+   */
+  public loadBannieres(): void {
+    this.loading = true;
+    this.error = '';
+
+    this.banniereService.getBannieres().subscribe({
+      next: (response) => {
+        this.bannieres = response.content;
+        this.filteredBannieres = [...this.bannieres];
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des bannières:', error);
+        this.error = this.texts.error;
+        this.loading = false;
+      }
     });
   }
 
-  private updateBannieresLanguage(): void {
-    this.bannieres = this.bannieres.map(banniere => ({
-      ...banniere,
-      statut: this.translateStatus(banniere.statut)
-    }));
-    this.filterBannieres();
-  }
-
-  private translateStatus(status: string): any {
-    const statusMap = this.currentLang === 'fr' ? {
-      'Active': 'Actif',
-      'Expired': 'Expiré',
-      'Pending': 'En attente'
-    } : {
-      'Actif': 'Active',
-      'Expiré': 'Expired',
-      'En attente': 'Pending'
-    };
-    return statusMap[status as keyof typeof statusMap] || status;
+  private initializeForm(): void {
+    this.banniereForm = this.fb.group({
+      title: ['', [Validators.required]],
+      description: [''],
+      link: ['', [Validators.required]],
+      permanent: [false],
+      startDate: ['', [Validators.required]],
+      endDate: ['']
+    });
   }
 
   onSearch(event: any): void {
@@ -268,101 +239,272 @@ export class BanniereComponent implements OnInit, OnDestroy {
 
   private filterBannieres(): void {
     this.filteredBannieres = this.bannieres.filter(banniere => {
-      const matchesSearch = banniere.titre.toLowerCase().includes(this.searchTerm) ||
+      const matchesSearch = banniere.title.toLowerCase().includes(this.searchTerm) ||
                           banniere.description.toLowerCase().includes(this.searchTerm) ||
-                          banniere.lien.toLowerCase().includes(this.searchTerm);
+                          banniere.link.toLowerCase().includes(this.searchTerm);
       
-      const matchesStatus = this.selectedStatus === 'all' || banniere.statut === this.selectedStatus;
+      const matchesStatus = this.selectedStatus === 'all' || this.getBanniereStatus(banniere) === this.selectedStatus;
       
       return matchesSearch && matchesStatus;
     });
   }
 
-  openAddBanniereModal(): void {
-    this.showAddBanniereModal = true;
-    this.banniereForm.reset({ permanent: false });
+  /**
+   * Déterminer le statut d'une bannière
+   */
+  public getBanniereStatus(banniere: Banniere): string {
+    if (banniere.permanent) {
+      return this.currentLang === 'fr' ? 'Actif' : 'Active';
+    }
+
+    const today = new Date();
+    const startDate = this.parseDate(banniere.startDate);
+    const endDate = this.parseDate(banniere.endDate);
+
+    if (today < startDate) {
+      return this.currentLang === 'fr' ? 'En attente' : 'Pending';
+    } else if (today > endDate) {
+      return this.currentLang === 'fr' ? 'Expiré' : 'Expired';
+    } else {
+      return this.currentLang === 'fr' ? 'Actif' : 'Active';
+    }
   }
 
-  closeAddBanniereModal(): void {
-    this.showAddBanniereModal = false;
+  /**
+   * Vérifier si une bannière est active
+   */
+  private isBanniereActive(banniere: Banniere): boolean {
+    return this.getBanniereStatus(banniere) === (this.currentLang === 'fr' ? 'Actif' : 'Active');
   }
+
+  /**
+   * Parser une date au format dd-MM-yyyy
+   */
+  private parseDate(dateString: string): Date {
+    const [day, month, year] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  showEditBanniereModal = false;
+
+  onEditWebImageSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedWebImage = file;
+      console.log('Web image selected:', file.name);
+    }
+  }
+  /**
+   * Formater une date pour l'affichage
+   */
+  public formatDateForDisplay(dateString: string): string {
+    const [day, month, year] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+
+  /**
+   * Obtenir l'affichage pour le champ permanent
+   */
+  getPermanentDisplay(permanent: boolean): string {
+    return permanent ? this.texts.yes : this.texts.no;
+  }
+  
+
+  onEditMobileImageSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedMobileImage = file;
+      console.log('Mobile image selected:', file.name);
+    }
+  } 
 
   onWebImageSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
-      console.log('Web image selected:', file);
-      this.banniereForm.patchValue({ imageWeb: file.name });
+      this.selectedWebImage = file;
+      console.log('Web image selected:', file.name);
     }
   }
 
   onMobileImageSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
-      console.log('Mobile image selected:', file);
-      this.banniereForm.patchValue({ imageMobile: file.name });
+      this.selectedMobileImage = file;
+      console.log('Mobile image selected:', file.name);
     }
   }
-
   onSubmit(): void {
     if (this.banniereForm.valid) {
-      const newBanniere: Banniere = {
-        id: this.bannieres.length + 1,
-        titre: this.banniereForm.get('titre')?.value,
+      const startDate = this.banniereForm.get('startDate')?.value;
+      const endDate = this.banniereForm.get('endDate')?.value;
+      
+      const formData: BanniereFormData = {
+        title: this.banniereForm.get('title')?.value,
         description: this.banniereForm.get('description')?.value,
-        lien: this.banniereForm.get('lien')?.value,
+        link: this.banniereForm.get('link')?.value,
         permanent: this.banniereForm.get('permanent')?.value,
-        dateDebut: this.banniereForm.get('dateDebut')?.value,
-        dateFin: this.banniereForm.get('dateFin')?.value || '',
-        imageWeb: this.banniereForm.get('imageWeb')?.value || 'default-web.jpg',
-        imageMobile: this.banniereForm.get('imageMobile')?.value || 'default-mobile.jpg',
-        statut: 'En attente'
+        startDate: this.convertDateForAPI(startDate),
+        endDate: endDate ? this.convertDateForAPI(endDate) : '',
+        webImg: this.selectedWebImage || undefined,
+        mobileImg: this.selectedMobileImage || undefined
       };
-
-      this.bannieres.push(newBanniere);
-      this.filterBannieres();
-      this.closeAddBanniereModal();
+  
+      this.loading = true;
+  
+      // Si on est en mode édition
+      if (this.editingBanniere) {
+        this.banniereService.updateBanniere(this.editingBanniere.id, formData).subscribe({
+          next: () => {
+            this.loadBannieres();
+            this.closeEditBanniereModal();
+            this.loading = false;
+          },
+          error: (error) => {
+            console.error('Erreur lors de la modification de la bannière:', error);
+            this.loading = false;
+          }
+        });
+      } else {
+        // Mode création (code existant)
+        this.banniereService.createBanniere(formData).subscribe({
+          next: () => {
+            this.loadBannieres();
+            this.closeAddBanniereModal();
+            this.loading = false;
+          },
+          error: (error) => {
+            console.error('Erreur lors de la création de la bannière:', error);
+            this.loading = false;
+          }
+        });
+      }
     }
+  }
+  
+  // Ajoutez cette méthode pour obtenir le titre du modal
+  get modalTitle(): string {
+    return this.editingBanniere 
+      ? (this.currentLang === 'fr' ? 'Modifier la bannière' : 'Edit Banner')
+      : this.texts.newBanner;
+  }
+  closeAddBanniereModal(): void {
+    this.showAddBanniereModal = false;
+    this.editingBanniereId = null;
   }
 
   getStatusClass(status: string): string {
     switch (status) {
       case 'Actif':
       case 'Active':
-        return 'text-green-600';
+        return 'bg-green-100 text-green-800';
       case 'Expiré':
       case 'Expired':
-        return 'text-red-600';
+        return 'bg-red-100 text-red-800';
       case 'En attente':
       case 'Pending':
-        return 'text-yellow-600';
+        return 'bg-yellow-100 text-yellow-800';
       default:
-        return 'text-gray-600';
+        return 'bg-gray-100 text-gray-800';
     }
   }
 
   viewBanniere(banniere: Banniere): void {
     console.log('View banniere:', banniere);
+    // Ouvrir le lien dans un nouvel onglet
+    if (banniere.link) {
+      window.open(banniere.link, '_blank');
+    }
+  }
+  convertToDateInputFormat = (dateString: string): string => {
+    const [day, month, year] = dateString.split('-');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
+  closeEditBanniereModal(): void {
+    this.showEditBanniereModal = false;
+    this.editingBanniere = null;
+    this.banniereForm.reset({ permanent: false });
+    this.selectedWebImage = null;
+    this.selectedMobileImage = null;
+  }
+  private convertDateForAPI(dateString: string): string {
+    if (!dateString) return '';
+    const [year, month, day] = dateString.split('-');
+    return `${day}-${month}-${year}`;
+  }
+  get submitButtonText(): string {
+    if (this.loading) {
+      return this.currentLang === 'fr' ? 'Enregistrement...' : 'Saving...';
+    }
+    return this.editingBanniere 
+      ? (this.currentLang === 'fr' ? 'Mettre à jour' : 'Update')
+      : this.texts.save;
+  }
+  // Méthode pour convertir la date du format dd-MM-yyyy vers yyyy-MM-dd (pour l'input type="date")
+  private convertDateForInput(dateString: string): string {
+    if (!dateString) return '';
+    const [day, month, year] = dateString.split('-');
+    return `${year}-${month}-${day}`;
+  }
+  
   editBanniere(banniere: Banniere): void {
-    console.log('Edit banniere:', banniere);
+    this.editingBanniere = banniere;
+    this.showEditBanniereModal = true;
+    
+    
+    // Pré-remplir le formulaire avec les données existantes
+    this.banniereForm.patchValue({
+      title: banniere.title,
+      description: banniere.description,
+      link: banniere.link,
+      permanent: banniere.permanent,
+      startDate: this.convertDateForInput(banniere.startDate),
+      endDate: banniere.permanent ? '' : this.convertDateForInput(banniere.endDate)
+    });
+    
+    // Réinitialiser les fichiers sélectionnés
+    this.selectedWebImage = null;
+    this.selectedMobileImage = null;
+  }
+  openAddBanniereModal(): void {
+    this.editingBanniereId = null;
+    this.showAddBanniereModal = true;
+    this.banniereForm.reset({ permanent: false });
+    this.selectedWebImage = null;
+    this.selectedMobileImage = null;
   }
 
-  toggleBanniereStatus(banniere: Banniere): void {
-    if (banniere.statut === 'Actif' || banniere.statut === 'Active') {
-      banniere.statut = this.currentLang === 'fr' ? 'Expiré' : 'Expired';
-    } else {
-      banniere.statut = this.currentLang === 'fr' ? 'Actif' : 'Active';
+  deleteBanniere(banniere: Banniere): void {
+    if (confirm(this.currentLang === 'fr' ? 'Êtes-vous sûr de vouloir supprimer cette bannière ?' : 'Are you sure you want to delete this banner?')) {
+      this.loading = true;
+      this.banniereService.deleteBanniere(banniere.id).subscribe({
+        next: () => {
+          this.loadBannieres();
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Erreur lors de la suppression de la bannière:', error);
+          this.loading = false;
+        }
+      });
     }
   }
 
   onPermanentChange(): void {
     const permanent = this.banniereForm.get('permanent')?.value;
     if (permanent) {
-      this.banniereForm.get('dateFin')?.clearValidators();
+      this.banniereForm.get('endDate')?.clearValidators();
     } else {
-      this.banniereForm.get('dateFin')?.setValidators([Validators.required]);
+      this.banniereForm.get('endDate')?.setValidators([Validators.required]);
     }
-    this.banniereForm.get('dateFin')?.updateValueAndValidity();
+    this.banniereForm.get('endDate')?.updateValueAndValidity();
+  }
+
+  /**
+   * Obtenir l'URL complète de l'image
+   */
+  getImageUrl(imagePath: string): string {
+    return this.banniereService.getImageUrl(imagePath);
   }
 }

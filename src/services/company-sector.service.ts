@@ -9,6 +9,17 @@ export interface SectorKPI {
   percentage: number;
   color: string;
 }
+export interface CliksKpi {
+  id: number;
+  title: string;
+  clicks: number;
+
+}
+export interface VisitByDay{
+  date: string;
+  number: number;
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -31,6 +42,18 @@ export class CompanySectorService {
     return `${percentage.toFixed(1)}%`;
   }
 
+  getVisitByDay(): Observable<VisitByDay[]> {
+    return this.http.get<VisitByDay[]>(`${this.baseUrl}/api/companies/daily-visit`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+getClicksKpi(): Observable<CliksKpi[]> {
+    return this.http.get<CliksKpi[]>(`${this.baseUrl}/api/ads/kpi/top6`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
     /**
    * Méthode utilitaire pour trier les secteurs par pourcentage (décroissant)
    */

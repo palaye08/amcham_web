@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HeaderComponent } from "../header/header.component";
 import { trigger, transition, style, animate } from '@angular/animations';
 import { LanguageService } from '../../../services/language.service';
-import { HomeService, AnnonceResponse, Company } from '../../../services/home.service';
+import { HomeService, AnnonceResponse, Company, AdResponse } from '../../../services/home.service';
 import { SecteurService, Country, SecteurResponse } from '../../../services/secteur.service';
 import { PartenaireService, Partenaire } from '../../../services/partenaire.service';
 import { Subscription } from 'rxjs';
@@ -18,7 +18,7 @@ interface MembreDisplay {
   pays: string;
   statut: 'Actif' | 'Inactif' | 'En attente' | 'Active' | 'Inactive' | 'Pending';
   date: string;
-  logo?: string;
+  logo: string;
   adresse?: string;
   telephone?: string;
   email?: string;
@@ -46,6 +46,11 @@ interface MembreDisplay {
   styleUrls: ['./home.component.css']
 })
 export class HomeComponent implements OnInit, OnDestroy {
+
+  // Données des publicités dynamiques
+  ads: AdResponse[] = [];
+  isAdsLoading = false;
+  
   currentSlideIndex = 0;
   private slideInterval: any;
   private langSubscription!: Subscription;
@@ -76,75 +81,102 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   partenaires: Partenaire[] = [];
 
-
-  // Textes en français
-  heroSlidesFr = [
+  // Slides statiques de fallback (en français)
+  private heroSlidesFr = [
     {
       title: 'Votre réseau mondial',
       subtitle: "d'opportunités professionnelles",
       description: 'Connectez-vous avec le réseau mondial de membres AmCham et développez votre activité à l\'international',
       subtext: 'Recherchez par nom, secteur, pays ou continent, valorisez votre activité avec une fiche professionnelle complète',
-      image: 'assets/image1.png'
+      image: 'assets/image1.png',
+      link: ''
     },
     {
       title: 'Opportunités d\'investissement',
       subtitle: 'aux États-Unis',
       description: 'Découvrez des secteurs en croissance et les régions prioritaires pour vos investissements internationaux',
       subtext: 'Bénéficiez de notre expertise et de nos partenariats stratégiques',
-      image: 'assets/image2.png'
+      image: 'assets/image2.png',
+      link: ''
     },
     {
       title: 'Conférence annuelle AmCham',
       subtitle: '2025',
       description: 'Participez vous aussi à cette grand événement qui fait parler dans toute la France',
       subtext: 'Networking de haut niveau avec les dirigeants internationaux',
-      image: 'assets/image3.png'
+      image: 'assets/image3.png',
+      link: ''
     },
     {
       title: 'Programme de partenariat',
       subtitle: 'international',
       description: 'Développez votre réseau à l\'international grâce à notre programme exclusif de partenariats',
       subtext: 'Accès privilégié aux marchés américains et européens',
-      image: 'assets/image4.png'
+      image: 'assets/image4.png',
+      link: ''
     }
   ];
 
-  // Textes en anglais
-  heroSlidesEn = [
+  getMemberImageUrl(pictures: string | undefined): string {
+    if (pictures && pictures.length > 0) {
+      return this.homeService.getMemberImageUrl(pictures);
+    }
+    return 'assets/default-member.png'; // Image par défaut si aucune image n'est disponible
+  }
+
+  // Slides statiques de fallback (en anglais)
+  private heroSlidesEn = [
     {
       title: 'Your global network',
       subtitle: 'of professional opportunities',
       description: 'Connect with the global AmCham member network and expand your business internationally',
       subtext: 'Search by name, sector, country or continent, showcase your business with a complete professional profile',
-      image: 'assets/image1.png'
+      image: 'assets/image1.png',
+      link: ''
     },
     {
       title: 'Investment opportunities',
       subtitle: 'in the United States',
       description: 'Discover growing sectors and priority regions for your international investments',
       subtext: 'Benefit from our expertise and strategic partnerships',
-      image: 'assets/image2.png'
+      image: 'assets/image2.png',
+      link: ''
     },
     {
       title: 'Annual AmCham Conference',
       subtitle: '2025',
       description: 'Join this major event that is making waves throughout France',
       subtext: 'High-level networking with international leaders',
-      image: 'assets/image3.png'
+      image: 'assets/image3.png',
+      link: ''
     },
     {
       title: 'Partnership program',
       subtitle: 'international',
       description: 'Develop your international network through our exclusive partnership program',
       subtext: 'Privileged access to American and European markets',
-      image: 'assets/image4.png'
+      image: 'assets/image4.png',
+      link: ''
     }
   ];
 
-
-
+  // Getter pour les slides héro (dynamique ou fallback)
   get heroSlides() {
-    return this.currentLang === 'fr' ? this.heroSlidesFr : this.heroSlidesEn;
+    if (this.ads.length === 0) {
+      // Fallback sur les slides statiques si aucune pub n'est chargée
+      return this.currentLang === 'fr' ? this.heroSlidesFr : this.heroSlidesEn;
+    }
+    
+    // Convertir les ads en format slide
+    return this.ads.map(ad => ({
+      title: this.extractTitle(ad.title),
+      subtitle: this.extractSubtitle(ad.title),
+      description: ad.description,
+      subtext: this.formatAdDates(ad.startDate, ad.endDate),
+      image: this.getAdImageUrl(ad.webImg),
+      link: ad.link,
+      id: ad.id
+    }));
   }
 
   get stats() {
@@ -177,7 +209,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       membersDisplayed: 'membres affichés',
       contact: 'Contacter',
       viewProfile: 'Voir la fiche',
-      seeAllMembers: 'Voir tous les membres',
+      seeAllMembers: 'Voir plus',
       appTitle: 'Téléchargez l\'app AmCham',
       appDesc: 'Recherchez des membres, gérez votre profil, suivez les annonces et les événements — partout, à tout moment.',
       feature1: 'Recherche avancée (nom, pays, secteur)',
@@ -206,7 +238,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       membersDisplayed: 'members displayed',
       contact: 'Contact',
       viewProfile: 'View profile',
-      seeAllMembers: 'See all members',
+      seeAllMembers: 'See more',
       appTitle: 'Download the AmCham app',
       appDesc: 'Search for members, manage your profile, follow announcements and events — anywhere, anytime.',
       feature1: 'Advanced search (name, country, sector)',
@@ -229,41 +261,23 @@ export class HomeComponent implements OnInit, OnDestroy {
     private homeService: HomeService,
     private secteurService: SecteurService,
     private partenaireService: PartenaireService 
-
   ) { }
 
   ngOnInit(): void {
-    this.startSlideShow();
-    
     this.langSubscription = this.languageService.currentLang$.subscribe(lang => {
       this.currentLang = lang;
       this.updateMembresLanguage();
     });
     
     this.currentLang = this.languageService.getCurrentLanguage();
+    
+    // Charger les ads en premier
+    this.loadAds();
+    
+    // Puis charger les autres données
     this.loadHomeData();
     this.loadCountriesAndSectors();
-    this.loadPartners(); // Ajouter cette ligne
-  }
-// Dans home.component.ts
-getLogoUrl(logoPath: string): string {
-  return this.partenaireService.getLogoUrl(logoPath);
-}
-  loadPartners(): void {
-    this.partenaireService.getPartners().subscribe({
-      next: (partenaires) => {
-        this.partenaires = partenaires;
-      },
-      error: (error) => {
-        console.error('Erreur lors du chargement des partenaires:', error);
-        // Garder les partenaires par défaut en cas d'erreur
-        this.partenaires = [
-          { id: 1, name: 'US Embassy', logo: '/assets/embassy.jpg', link: '#' },
-          { id: 2, name: 'Ministère de l\'Education', logo: '/assets/ministry.jpg', link: '#' },
-          { id: 3, name: 'Coca-Cola', logo: '/assets/cocacola.jpg', link: '#' }
-        ];
-      }
-    });
+    this.loadPartners();
   }
 
   ngOnDestroy(): void {
@@ -276,10 +290,100 @@ getLogoUrl(logoPath: string): string {
   }
 
   /**
-   * Charger les pays et secteurs pour les dropdowns
+   * Charger les publicités depuis l'API
    */
+  loadAds(): void {
+    this.isAdsLoading = true;
+    
+    this.homeService.getAds({ page: 0, size: 10 }).subscribe({
+      next: (response) => {
+        this.ads = response.content;
+        this.isAdsLoading = false;
+        
+        // Démarrer le slideshow avec les nouvelles données
+        if (this.ads.length > 0) {
+          this.currentSlideIndex = 0;
+          if (this.slideInterval) {
+            clearInterval(this.slideInterval);
+          }
+          this.startSlideShow();
+        }
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des publicités:', error);
+        this.isAdsLoading = false;
+        // Les slides statiques seront utilisés comme fallback
+        this.startSlideShow();
+      }
+    });
+  }
+
+  /**
+   * Obtenir l'URL complète de l'image de la publicité
+   */
+  getAdImageUrl(webImg: string): string {
+    return this.homeService.getAdWebImageUrl(webImg);
+  }
+
+  /**
+   * Extraire le titre principal (avant le tiret ou tout le texte)
+   */
+  private extractTitle(fullTitle: string): string {
+    const parts = fullTitle.split('–');
+    if (parts.length === 0) return fullTitle;
+    return parts[0].trim();
+  }
+
+  /**
+   * Extraire le sous-titre (après le tiret si existe)
+   */
+  private extractSubtitle(fullTitle: string): string {
+    const parts = fullTitle.split('–');
+    return parts.length > 1 ? parts[1].trim() : '';
+  }
+
+  /**
+   * Formater les dates de début et fin pour l'affichage
+   */
+  private formatAdDates(startDate: string, endDate: string): string {
+    if (this.currentLang === 'fr') {
+      return `Du ${startDate} au ${endDate}`;
+    } else {
+      return `From ${startDate} to ${endDate}`;
+    }
+  }
+
+  /**
+   * Ouvrir le lien de la publicité
+   */
+  openAdLink(): void {
+    const currentAd = this.ads[this.currentSlideIndex];
+    if (currentAd && currentAd.link) {
+      window.open(currentAd.link, '_blank');
+    }
+  }
+
+  getLogoUrl(logoPath: string): string {
+    return this.partenaireService.getLogoUrl(logoPath);
+  }
+
+  loadPartners(): void {
+    this.partenaireService.getPartners().subscribe({
+      next: (partenaires) => {
+        this.partenaires = partenaires;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des partenaires:', error);
+        this.partenaires = [
+          { id: 1, name: 'US Embassy', logo: '/assets/embassy.jpg', link: '#' },
+          { id: 2, name: 'Ministère de l\'Education', logo: '/assets/ministry.jpg', link: '#' },
+          { id: 3, name: 'Coca-Cola', logo: '/assets/cocacola.jpg', link: '#' }
+        ];
+      }
+    });
+  }
+
   loadCountriesAndSectors(): void {
-    // Charger les pays depuis SecteurService
     this.secteurService.getCountries().subscribe({
       next: (countries) => {
         this.countries = countries;
@@ -289,7 +393,6 @@ getLogoUrl(logoPath: string): string {
       }
     });
 
-    // Charger les secteurs depuis SecteurService
     this.secteurService.getAllSecteurs().subscribe({
       next: (sectors) => {
         this.sectors = sectors;
@@ -300,45 +403,33 @@ getLogoUrl(logoPath: string): string {
     });
   }
 
-  /**
-   * Méthode de recherche
-   */
   rechercher(): void {
     this.isSearching = true;
     this.error = null;
 
-    // Construire les paramètres de recherche
     const searchParams: any = {
       page: 0,
       size: 6
     };
 
-    // Ajouter le nom si renseigné
     if (this.searchKeyword && this.searchKeyword.trim()) {
       searchParams.name = this.searchKeyword.trim();
     }
 
-    // Ajouter le secteur si sélectionné
     if (this.selectedSectorId) {
-      // Récupérer le nom du secteur sélectionné
       const selectedSector = this.sectors.find(s => s.id === this.selectedSectorId);
       if (selectedSector) {
         searchParams.sector = this.currentLang === 'fr' ? selectedSector.nameFr : selectedSector.nameEn;
       }
     }
 
-    // Utiliser la méthode getMembres du HomeService pour la recherche
-    this.homeService.getMembres(this.countryAmchamId, searchParams).subscribe({
+    this.homeService.getMembres(searchParams).subscribe({
       next: (response) => {
-        // Convertir les résultats en MembreDisplay
         this.membres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
-        
-        // Mettre à jour le nombre total de résultats
+        console.log('Membres après recherche:', this.membres);
         this.totalCompanies = response.totalElements;
-        
         this.isSearching = false;
 
-        // Si des résultats sont trouvés, scroller vers la section membres
         if (this.membres.length > 0) {
           setTimeout(() => {
             const membresSection = document.querySelector('.membres-section');
@@ -358,19 +449,13 @@ getLogoUrl(logoPath: string): string {
     });
   }
 
-  /**
-   * Réinitialiser la recherche
-   */
   resetSearch(): void {
     this.searchKeyword = '';
     this.selectedCountryId = undefined;
     this.selectedSectorId = undefined;
-    this.loadMembres(); // Recharger tous les membres
+    this.loadMembres();
   }
 
-  /**
-   * Charger toutes les données de la page d'accueil
-   */
   loadHomeData(): void {
     this.isLoading = true;
     this.error = null;
@@ -427,7 +512,7 @@ getLogoUrl(logoPath: string): string {
     }).subscribe({
       next: (response) => {
         this.membres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
-        
+        console.log('Membres après recherche:', this.membres);
         const uniqueCountries = [...new Set(response.content.map(membre => membre.country))];
         this.totalCountries = uniqueCountries.length;
         
@@ -450,7 +535,7 @@ getLogoUrl(logoPath: string): string {
       statut: 'Actif',
       date: this.formatDateForDisplay(new Date()),
       pictures: company.pictures || [],
-      logo: company.pictures?.[0],
+      logo: company.logo,
       adresse: company.address,
       telephone: company.telephone,
       email: company.email,
@@ -550,7 +635,7 @@ getLogoUrl(logoPath: string): string {
   startSlideShow(): void {
     this.slideInterval = setInterval(() => {
       this.nextSlide();
-    }, 2000);
+    }, 5000); // 5 secondes pour mieux voir les publicités
   }
 
   nextSlide(): void {

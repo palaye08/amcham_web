@@ -4,7 +4,28 @@ import { HeaderComponent } from "../header/header.component";
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LanguageService } from '../../../services/language.service';
+import { HomeService, Company } from '../../../services/home.service';
+import { SecteurService, Country, SecteurResponse } from '../../../services/secteur.service';
 import { Subscription } from 'rxjs';
+
+interface MembreDisplay {
+  id: number;
+  name: string;
+  categoryFr: string;
+  categoryEn: string;
+  locationFr: string;
+  locationEn: string;
+  phone: string;
+  website: string;
+  descriptionFr: string;
+  descriptionEn: string;
+  logo: string;
+  pictures: string[];
+  address?: string;
+  email?: string;
+  country?: string;
+  countryAmcham?: string;
+}
 
 @Component({
   selector: 'app-membre',
@@ -19,8 +40,30 @@ export class MembreComponent implements OnInit, OnDestroy {
 
   // Filtres
   searchTerm: string = '';
-  selectedCountry: string = '';
-  selectedSector: string = '';
+  selectedCountryId: number | undefined;
+  selectedSectorId: number | undefined;
+
+  // États de chargement
+  isLoading = false;
+  isSearching = false;
+  error: string | null = null;
+
+  // Données dynamiques
+  allMembres: MembreDisplay[] = [];
+  filteredMembres: MembreDisplay[] = [];
+  
+  // Listes pour les dropdowns
+  countries: Country[] = [];
+  sectors: SecteurResponse[] = [];
+
+  // Pagination
+  currentPage = 0;
+  pageSize = 9;
+  totalElements = 0;
+  hasMore = false;
+
+  // ID du pays AMCHAM
+  countryAmchamId = 1;
 
   // Textes dynamiques
   get texts() {
@@ -44,7 +87,9 @@ export class MembreComponent implements OnInit, OnDestroy {
       phone: 'Téléphone',
       website: 'Site web',
       allCountries: 'Tous les pays',
-      allSectors: 'Tous les secteurs'
+      allSectors: 'Tous les secteurs',
+      loading: 'Chargement...',
+      errorLoading: 'Erreur lors du chargement des membres'
     } : {
       heroTitle: 'Find business partners',
       heroSubtitle: 'Use our advanced search tool to find members by name, business sector or location',
@@ -65,178 +110,31 @@ export class MembreComponent implements OnInit, OnDestroy {
       phone: 'Phone',
       website: 'Website',
       allCountries: 'All countries',
-      allSectors: 'All sectors'
+      allSectors: 'All sectors',
+      loading: 'Loading...',
+      errorLoading: 'Error loading members'
     };
   }
 
-  // Options de filtrage avec traductions
-  get countries() {
-    return this.currentLang === 'fr' ? [
-      'Tous les pays',
-      'États-Unis',
-      'France', 
-      'Canada',
-      'Royaume-Uni',
-      'Allemagne',
-      'Japon'
-    ] : [
-      'All countries',
-      'United States',
-      'France', 
-      'Canada',
-      'United Kingdom',
-      'Germany',
-      'Japan'
-    ];
-  }
-
-  get sectors() {
-    return this.currentLang === 'fr' ? [
-      'Tous les secteurs',
-      'Technologie',
-      'Finance',
-      'Santé',
-      'Éducation',
-      'Industrie',
-      'Commerce'
-    ] : [
-      'All sectors',
-      'Technology',
-      'Finance',
-      'Health',
-      'Education',
-      'Industry',
-      'Commerce'
-    ];
-  }
-
-  // Liste complète des membres avec traductions
-  allMembres = [
-    {
-      id: 1,
-      name: 'Global Tech Solutions',
-      categoryFr: 'Technologie',
-      categoryEn: 'Technology',
-      locationFr: 'Boston, États-Unis',
-      locationEn: 'Boston, USA',
-      phone: '+1 555-123-4567',
-      website: 'www.example.us',
-      descriptionFr: 'Leader dans le domaine des solutions technologiques innovantes. Nous aidons les entreprises à transformer leurs opérations grâce à des technologies de pointe et des services consultatifs spécialisés.',
-      descriptionEn: 'Leader in innovative technology solutions. We help businesses transform their operations through cutting-edge technologies and specialized advisory services.',
-      logo: '/assets/logo1.jpg'
-    },
-    {
-      id: 2,
-      name: 'Finance Partners International',
-      categoryFr: 'Finance',
-      categoryEn: 'Finance',
-      locationFr: 'Paris, France',
-      locationEn: 'Paris, France',
-      phone: '+33 1 23 45 67 89',
-      website: 'www.example.fr',
-      descriptionFr: 'Spécialistes des services financiers internationaux avec plus de 20 ans d\'expérience dans le secteur bancaire et les investissements transfrontaliers.',
-      descriptionEn: 'Specialists in international financial services with over 20 years of experience in banking and cross-border investments.',
-      logo: '/assets/logo2.jpg'
-    },
-    {
-      id: 3,
-      name: 'Health Innovations Corp',
-      categoryFr: 'Santé',
-      categoryEn: 'Health',
-      locationFr: 'Toronto, Canada',
-      locationEn: 'Toronto, Canada',
-      phone: '+1 416-555-7890',
-      website: 'www.example.ca',
-      descriptionFr: 'Pionniers dans les innovations en santé avec des solutions révolutionnaires pour améliorer les soins aux patients et l\'efficacité des systèmes de santé.',
-      descriptionEn: 'Pioneers in health innovations with revolutionary solutions to improve patient care and healthcare system efficiency.',
-      logo: '/assets/logo3.jpg'
-    },
-    {
-      id: 4,
-      name: 'EduGlobal Network',
-      categoryFr: 'Éducation',
-      categoryEn: 'Education',
-      locationFr: 'Londres, Royaume-Uni',
-      locationEn: 'London, United Kingdom',
-      phone: '+44 20 1234 5678',
-      website: 'www.example.co.uk',
-      descriptionFr: 'Réseau éducatif international offrant des programmes d\'échange et des formations professionnelles de haute qualité pour les entreprises.',
-      descriptionEn: 'International educational network offering exchange programs and high-quality professional training for businesses.',
-      logo: '/assets/logo4.jpg'
-    },
-    {
-      id: 5,
-      name: 'Industrial Dynamics',
-      categoryFr: 'Industrie',
-      categoryEn: 'Industry',
-      locationFr: 'Berlin, Allemagne',
-      locationEn: 'Berlin, Germany',
-      phone: '+49 30 12345678',
-      website: 'www.example.de',
-      descriptionFr: 'Solutions industrielles avancées pour l\'automatisation et l\'optimisation des processus de fabrication dans l\'industrie 4.0.',
-      descriptionEn: 'Advanced industrial solutions for automation and optimization of manufacturing processes in Industry 4.0.',
-      logo: '/assets/logo5.jpg'
-    },
-    {
-      id: 6,
-      name: 'Commerce Global',
-      categoryFr: 'Commerce',
-      categoryEn: 'Commerce',
-      locationFr: 'Tokyo, Japon',
-      locationEn: 'Tokyo, Japan',
-      phone: '+81 3-1234-5678',
-      website: 'www.example.jp',
-      descriptionFr: 'Plateforme de commerce international facilitant les échanges commerciaux entre l\'Asie et les marchés occidentaux.',
-      descriptionEn: 'International trade platform facilitating commercial exchanges between Asia and Western markets.',
-      logo: '/assets/logo6.jpg'
-    },
-    {
-      id: 7,
-      name: 'Finrex Capital',
-      categoryFr: 'Finance',
-      categoryEn: 'Finance',
-      locationFr: 'Paris, France',
-      locationEn: 'Paris, France',
-      phone: '+33 1 34 56 78 90',
-      website: 'www.example.fr',
-      descriptionFr: 'Cabinet de conseil en investissements et gestion de patrimoine pour les entreprises internationales.',
-      descriptionEn: 'Investment advisory and wealth management firm for international companies.',
-      logo: '/assets/logo7.jpg'
-    },
-    {
-      id: 8,
-      name: 'Acme Technologies',
-      categoryFr: 'Technologie',
-      categoryEn: 'Technology',
-      locationFr: 'États-Unis',
-      locationEn: 'United States',
-      phone: '+1 146-555-7890',
-      website: 'www.example.us',
-      descriptionFr: 'Solutions technologiques personnalisées pour les entreprises de toutes tailles.',
-      descriptionEn: 'Custom technology solutions for businesses of all sizes.',
-      logo: '/assets/logo8.jpg'
-    }
-  ];
-
-  // Membres filtrés à afficher
-  filteredMembres = [...this.allMembres];
-
   constructor(
     private router: Router,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private homeService: HomeService,
+    private secteurService: SecteurService
   ) { }
 
   ngOnInit(): void {
-    this.applyFilters();
-    
     // S'abonner aux changements de langue
     this.langSubscription = this.languageService.currentLang$.subscribe(lang => {
       this.currentLang = lang;
-      this.applyFilters(); // Re-filtrer pour mettre à jour les textes
     });
     
     // Initialiser la langue
     this.currentLang = this.languageService.getCurrentLanguage();
+
+    // Charger les données initiales
+    this.loadCountriesAndSectors();
+    this.loadMembres();
   }
 
   ngOnDestroy(): void {
@@ -245,65 +143,204 @@ export class MembreComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Méthode pour appliquer les filtres
-  applyFilters() {
-    this.filteredMembres = this.allMembres.filter(membre => {
-      const matchesSearch = !this.searchTerm || 
-        membre.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        membre[`description${this.currentLang === 'fr' ? 'Fr' : 'En'}`].toLowerCase().includes(this.searchTerm.toLowerCase());
-      
-      const matchesCountry = !this.selectedCountry || 
-        this.selectedCountry === this.texts.allCountries ||
-        membre[`location${this.currentLang === 'fr' ? 'Fr' : 'En'}`].includes(this.selectedCountry);
-      
-      const matchesSector = !this.selectedSector || 
-        this.selectedSector === this.texts.allSectors ||
-        membre[`category${this.currentLang === 'fr' ? 'Fr' : 'En'}`] === this.selectedSector;
+  /**
+   * Charger les pays et secteurs pour les filtres
+   */
+  loadCountriesAndSectors(): void {
+    this.secteurService.getCountries().subscribe({
+      next: (countries) => {
+        this.countries = countries;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des pays:', error);
+      }
+    });
 
-      return matchesSearch && matchesCountry && matchesSector;
+    this.secteurService.getAllSecteurs().subscribe({
+      next: (sectors) => {
+        this.sectors = sectors;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des secteurs:', error);
+      }
     });
   }
 
-  // Méthode pour rechercher
-  onSearch() {
-    this.applyFilters();
+  /**
+   * Charger les membres depuis l'API
+   */
+  loadMembres(append: boolean = false): void {
+    this.isLoading = true;
+    this.error = null;
+
+    const params: any = {
+      page: this.currentPage,
+      size: this.pageSize
+    };
+
+    this.homeService.getMembres(this.countryAmchamId, params).subscribe({
+      next: (response) => {
+        const newMembres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
+        
+        if (append) {
+          this.allMembres = [...this.allMembres, ...newMembres];
+        } else {
+          this.allMembres = newMembres;
+        }
+        
+        this.filteredMembres = [...this.allMembres];
+        this.totalElements = response.totalElements;
+        this.hasMore = !response.last;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des membres:', error);
+        this.error = this.texts.errorLoading;
+        this.isLoading = false;
+      }
+    });
   }
 
-  rechercher() {
-    this.applyFilters();
+  /**
+   * Mapper les données Company vers MembreDisplay
+   */
+  private mapCompanyToMembreDisplay(company: Company): MembreDisplay {
+    return {
+      id: company.id,
+      name: company.name,
+      categoryFr: company.sector,
+      categoryEn: company.sector,
+      locationFr: company.country,
+      locationEn: company.country,
+      phone: company.telephone || 'N/A',
+      website: company.webLink || 'N/A',
+      descriptionFr: company.description || '',
+      descriptionEn: company.description || '',
+      logo: company.logo,
+      pictures: company.pictures || [],
+      address: company.address,
+      email: company.email,
+      country: company.country,
+      countryAmcham: company.countryAmcham
+    };
   }
 
-  // Méthodes de filtrage
-  onCountryChange(country: string) {
-    this.selectedCountry = country;
-    this.applyFilters();
+  /**
+   * Rechercher avec filtres
+   */
+  rechercher(): void {
+    this.isSearching = true;
+    this.error = null;
+    this.currentPage = 0;
+
+    const searchParams: any = {
+      page: this.currentPage,
+      size: this.pageSize
+    };
+
+    // Ajouter le nom si renseigné
+    if (this.searchTerm && this.searchTerm.trim()) {
+      searchParams.name = this.searchTerm.trim();
+    }
+
+    // Ajouter le secteur si sélectionné
+    if (this.selectedSectorId) {
+      const selectedSector = this.sectors.find(s => s.id === this.selectedSectorId);
+      if (selectedSector) {
+        searchParams.sector = this.currentLang === 'fr' ? selectedSector.nameFr : selectedSector.nameEn;
+      }
+    }
+
+    // Ajouter le pays si sélectionné
+    if (this.selectedCountryId) {
+      const selectedCountry = this.countries.find(c => c.id === this.selectedCountryId);
+      if (selectedCountry) {
+        searchParams.country = selectedCountry.name;
+      }
+    }
+
+    this.homeService.getMembres(this.countryAmchamId, searchParams).subscribe({
+      next: (response) => {
+        this.allMembres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
+        this.filteredMembres = [...this.allMembres];
+        this.totalElements = response.totalElements;
+        this.hasMore = !response.last;
+        this.isSearching = false;
+      },
+      error: (error) => {
+        console.error('Erreur lors de la recherche:', error);
+        this.error = this.currentLang === 'fr' 
+          ? 'Une erreur est survenue lors de la recherche. Veuillez réessayer.' 
+          : 'An error occurred during the search. Please try again.';
+        this.isSearching = false;
+      }
+    });
   }
 
-  onSectorChange(sector: string) {
-    this.selectedSector = sector;
-    this.applyFilters();
+  /**
+   * Réinitialiser les filtres
+   */
+  resetFilters(): void {
+    this.searchTerm = '';
+    this.selectedCountryId = undefined;
+    this.selectedSectorId = undefined;
+    this.currentPage = 0;
+    this.loadMembres();
   }
 
-  // Navigation vers les détails d'un membre
-  navigateToMembreDetails(membreId: number) {
+  /**
+   * Charger plus de membres (pagination)
+   */
+  loadMore(): void {
+    if (this.hasMore && !this.isLoading) {
+      this.currentPage++;
+      this.loadMembres(true);
+    }
+  }
+
+  /**
+   * Navigation vers les détails d'un membre
+   */
+  navigateToMembreDetails(membreId: number): void {
     this.router.navigate(['/membre', membreId]);
   }
 
-  // Méthode pour contacter un membre
-  contactMembre(membre: any) {
-    // Logique de contact - peut ouvrir une modal ou rediriger vers un formulaire
-    console.log('Contacter:', membre.name);
+  /**
+   * Méthode pour contacter un membre
+   */
+  contactMembre(membre: MembreDisplay): void {
+    if (membre.email) {
+      window.location.href = `mailto:${membre.email}`;
+    } else {
+      console.log('Contacter:', membre.name);
+    }
   }
 
-  // Charger plus de membres (si pagination)
-  loadMore() {
-    // Logique pour charger plus de membres
-    console.log('Charger plus de membres');
-  }
-
-  // Méthode utilitaire pour obtenir la propriété traduite d'un membre
-  getTranslatedProperty(membre: any, property: string): string {
+  /**
+   * Obtenir la propriété traduite d'un membre
+   */
+  getTranslatedProperty(membre: MembreDisplay, property: string): string {
     const langSuffix = this.currentLang === 'fr' ? 'Fr' : 'En';
-    return membre[`${property}${langSuffix}`] || membre[property] || '';
+    const key = `${property}${langSuffix}` as keyof MembreDisplay;
+    return (membre[key] as string) || '';
+  }
+
+  /**
+   * Obtenir le nom du secteur traduit
+   */
+  getSectorName(sector: SecteurResponse): string {
+    return this.currentLang === 'fr' ? sector.nameFr : sector.nameEn;
+  }
+  getMemberImageUrl(picture: string): string {
+    return this.homeService.getCompanyImageUrl(picture);
+  }
+  /**
+   * Obtenir l'URL du logo
+   */
+  getLogoUrl(pictures: string[]): string {
+    if (pictures && pictures.length > 0) {
+      return this.homeService.getCompanyImageUrl(pictures[0]);
+    }
+    return '/assets/default-company-logo.png';
   }
 }

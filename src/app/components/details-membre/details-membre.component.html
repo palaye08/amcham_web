@@ -1,21 +1,23 @@
 <app-header></app-header>
 
-<div class="min-h-screen bg-gray-50" *ngIf="membre">
+<div class="min-h-screen bg-gray-50" *ngIf="membre && !isLoading">
   <!-- Header Section avec fond #101E35 -->
   <div class="bg-[#101E35] text-white py-8">
     <div class="w-[90%] mx-auto">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-6">
-          <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center">
-            <span class="text-[#101E35] font-bold text-2xl">W</span>
+          <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+            <!-- <span class="text-[#101E35] font-bold text-2xl">{{ getInitial(membre.name) }}</span> -->
+            <img *ngIf="membre.logo" [src]="'https://wakana.online/repertoire_amchams/' + membre.logo" 
+                 [alt]="membre.name" 
+                 class="w-16 h-16 object-contain rounded-full">
           </div>
           <div>
             <h1 class="text-3xl font-bold mb-1">{{ membre.name }}</h1>
-            <p class="text-blue-200 text-lg font-medium mb-1">{{ getTranslatedProperty(membre, 'category') }}</p>
+            <p class="text-blue-200 text-lg font-medium mb-1">{{ membre.sector }}</p>
             <p class="text-sm text-gray-300">
-              {{ getTranslatedProperty(membre, 'location').split(',')[1] }} • 
-              {{ texts.founded }} {{ membre.foundedYear }} • 
-              {{ getTranslatedProperty(membre, 'employees') }}
+              {{ membre.city }} 
+              {{ membre.country }}
             </p>
           </div>
         </div>
@@ -44,7 +46,7 @@
               </svg>
               <div>
                 <p class="text-gray-900 font-medium">{{ texts.address }}</p>
-                <p class="text-gray-600 text-sm">{{ getTranslatedProperty(membre, 'location') }}</p>
+                <p class="text-gray-600 text-sm">{{ getCompleteAddress() }}</p>
               </div>
             </div>
             <div class="flex items-start space-x-3">
@@ -53,7 +55,7 @@
               </svg>
               <div>
                 <p class="text-gray-900 font-medium">{{ texts.phone }}</p>
-                <p class="text-blue-600 hover:text-blue-800 cursor-pointer text-sm" (click)="callPhone()">{{ membre.phone }}</p>
+                <p class="text-blue-600 hover:text-blue-800 cursor-pointer text-sm" (click)="callPhone()">{{ membre.telephone }}</p>
               </div>
             </div>
             <div class="flex items-start space-x-3">
@@ -71,7 +73,7 @@
               </svg>
               <div>
                 <p class="text-gray-900 font-medium">{{ texts.website }}</p>
-                <p class="text-blue-600 hover:text-blue-800 cursor-pointer text-sm" (click)="visitWebsite()">{{ membre.website }}</p>
+                <p class="text-blue-600 hover:text-blue-800 cursor-pointer text-sm" (click)="visitWebsite()">{{ membre.webLink }}</p>
               </div>
             </div>
           </div>
@@ -81,15 +83,15 @@
         </div>
 
         <!-- Horaires d'ouverture -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="bg-white rounded-lg shadow-lg p-6" *ngIf="horaires && horaires.length > 0">
           <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ texts.openingHours }}</h2>
           <div class="space-y-2">
             <div *ngFor="let jour of getTranslatedDays()" 
                  class="flex justify-between items-center py-1">
               <span class="text-gray-600">{{ jour }}</span>
-              <span [ngClass]="getTranslatedHoraires()[jour] === texts.closed ? 'text-red-600 font-medium' : 'text-gray-900'"
+              <span [ngClass]="getFormattedHoraires()[jour] === texts.closed ? 'text-red-600 font-medium' : 'text-gray-900'"
                     class="text-sm">
-                {{ getTranslatedHoraires()[jour] }}
+                {{ getFormattedHoraires()[jour] }}
               </span>
             </div>
           </div>
@@ -102,13 +104,13 @@
         <!-- Présentation -->
         <div class="bg-white rounded-lg shadow-lg p-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ texts.presentation }}</h2>
-          <p class="text-gray-600 leading-relaxed mb-6">{{ getTranslatedProperty(membre, 'description') }}</p>
+          <p class="text-gray-600 leading-relaxed mb-6">{{ membre.description }}</p>
           
           <!-- Services -->
-          <div class="mb-6" *ngIf="membre.servicesFr || membre.servicesEn">
+          <div class="mb-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ texts.services }}</h3>
             <ul class="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <li *ngFor="let service of getTranslatedProperty(membre, 'services')" class="flex items-center space-x-2">
+              <li *ngFor="let service of getServices()" class="flex items-center space-x-2">
                 <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                 </svg>
@@ -118,10 +120,10 @@
           </div>
 
           <!-- Certifications -->
-          <div *ngIf="membre.certifications">
+          <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ texts.certifications }}</h3>
             <div class="flex flex-wrap gap-2">
-              <span *ngFor="let cert of membre.certifications" 
+              <span *ngFor="let cert of certificationsSimules" 
                     class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                 {{ cert }}
               </span>
@@ -130,23 +132,24 @@
         </div>
 
         <!-- Galerie photos -->
-        <div class="bg-white rounded-lg shadow-lg p-6" *ngIf="membre.galerie">
+        <div class="bg-white rounded-lg shadow-lg p-6" *ngIf="membre.pictures && membre.pictures.length > 0">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ texts.photoGallery }}</h2>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div *ngFor="let photo of membre.galerie" class="aspect-w-16 aspect-h-12 bg-gray-200 rounded-lg overflow-hidden">
+            <div *ngFor="let photo of membre.pictures" class="aspect-w-16 aspect-h-12 bg-gray-200 rounded-lg overflow-hidden">
               <div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center">
-                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
+                <img [src]="'https://wakana.online/repertoire_amchams/' + photo" 
+                     [alt]="membre.name" 
+                     class="w-full h-full object-cover rounded-lg">
               </div>
             </div>
           </div>
         </div>
 
         <!-- Vidéo de présentation -->
-        <div class="bg-white rounded-lg shadow-lg p-6" *ngIf="membre.videoUrl">
+        <div class="bg-white rounded-lg shadow-lg p-6" *ngIf="membre.videoLink">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ texts.presentationVideo }}</h2>
-          <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-lg overflow-hidden relative group cursor-pointer">
+          <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-lg overflow-hidden relative group cursor-pointer"
+               (click)="visitWebsite()">
             <div class="w-full h-64 bg-gray-800 rounded-lg flex items-center justify-center">
               <div class="text-center text-white">
                 <svg class="w-16 h-16 mx-auto mb-2 opacity-80 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
@@ -169,7 +172,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
               </svg>
               <p class="font-medium">{{ texts.viewOnMap }}</p>
-              <p class="text-sm">{{ getTranslatedProperty(membre, 'location') }}</p>
+              <p class="text-sm">{{ getCompleteAddress() }}</p>
             </div>
           </div>
         </div>
@@ -190,7 +193,7 @@
       
       <!-- Cartes d'avis avec fond blanc et shadow -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div *ngFor="let avis of membre.avis" class="bg-white rounded-lg shadow-lg p-4 border">
+        <div *ngFor="let avis of avisSimules" class="bg-white rounded-lg shadow-lg p-4 border">
           <div class="text-center mb-4">
             <div class="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
               <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,9 +236,7 @@
         <div *ngFor="let membreSimilaire of membresSimilaires" class="bg-white rounded-lg shadow-lg p-6">
           <div class="flex items-center space-x-3 mb-4">
             <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-              </svg>
+              <span class="text-blue-600 font-bold text-lg">{{ getInitial(membreSimilaire.name) }}</span>
             </div>
             <div class="min-w-0 flex-1">
               <h3 class="font-semibold text-gray-900 text-sm truncate">{{ membreSimilaire.name }}</h3>
@@ -278,8 +279,17 @@
   </div>
 </div>
 
+<!-- Loading State -->
+<div class="min-h-screen bg-gray-50 flex items-center justify-center" *ngIf="isLoading">
+  <div class="text-center">
+    <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600 mx-auto mb-4"></div>
+    <h2 class="text-xl font-semibold text-gray-900">Chargement...</h2>
+    <p class="text-gray-600">Récupération des informations du membre</p>
+  </div>
+</div>
+
 <!-- Message si membre non trouvé -->
-<div class="min-h-screen bg-gray-50 flex items-center justify-center" *ngIf="!membre">
+<div class="min-h-screen bg-gray-50 flex items-center justify-center" *ngIf="!membre && !isLoading">
   <div class="text-center">
     <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>

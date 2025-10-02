@@ -258,7 +258,7 @@ Math: any;
       pays: company.country || company.countryAmcham,
       statut: 'Actif', // À adapter selon votre logique
       date: this.formatDateForDisplay(new Date()),
-      logo: company.pictures?.[0],
+      logo: company.logo,
       adresse: company.address,
       telephone: company.telephone,
       email: company.email,

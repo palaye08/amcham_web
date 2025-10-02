@@ -18,6 +18,7 @@ export interface Company {
   country: string;
   sector: string;
   webLink: string;
+  logo: string;
   pictures: string[];
   lat: number;
   lon: number;
@@ -95,6 +96,19 @@ export interface MembresParams {
   name?: string;
   sector?: string;
 }
+export interface SearchStats{
+  total: number;
+  thisWeek: number;
+  lastWeek: number;
+  weeklyEvolution: number;
+}
+
+export interface TotalCompany{
+  totalCompanies: number;
+  percentageChange: number;
+  monthlyStats: { month: string; count: number }[] | null;
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -146,6 +160,7 @@ export class CompanyService {
         catchError(this.handleError)
       );
   }
+  
 
   /**
    * Obtenir les membres d'un pays AMCHAM - GET /api/companies/country-amcham/{countryAmchamId}
@@ -176,7 +191,13 @@ export class CompanyService {
       catchError(this.handleError)
     );
   }
+getSearchStats(): Observable<SearchStats> {
 
+    return this.http.get<SearchStats>(`${this.baseUrl}/api/companies/search/stats`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
   /**
    * Obtenir les statistiques de contacts d'une entreprise - GET /api/companies/contacts/{companyId}/circular-stats
    */
@@ -274,8 +295,8 @@ export class CompanyService {
   /**
    * Obtenir le nombre total d'entreprises
    */
-  getTotalCompanies(): Observable<number> {
-    return this.http.get<number>(`${this.baseUrl}/api/companies/total`)
+  getTotalCompanies(): Observable<TotalCompany> {
+    return this.http.get<TotalCompany>(`${this.baseUrl}/api/companies/total/kpi`)
       .pipe(
         catchError(this.handleError)
       );
