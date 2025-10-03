@@ -23,6 +23,26 @@ export interface Company {
   lat: number;
   lon: number;
 }
+export interface SimilarCompany {
+ 
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  email: string;
+  telephone: string;
+  videoLink: string | null;
+  countryAmcham: string;
+  country: string;
+  sector: string;
+  webLink: string;
+  pictures: string[];
+  lat: number;
+  lon: number;
+  updatedAt: string | null;
+  logo: string;
+}
+
   // Ajoutez cette interface dans la section des interfaces
   export interface CompanySchedule {
     dayOfWeek: string;
@@ -192,6 +212,14 @@ getRatings(companyId: number): Observable<Ratings[]> {
       .pipe(
         catchError(this.handleError)
       );
+}
+
+// /api/companies/{id}/similar
+getSimilarCompanies(companyId: number): Observable<SimilarCompany[]> {
+  return this.http.get<SimilarCompany[]>(`${this.baseUrl}/api/companies/${companyId}/similar`)
+    .pipe(
+      catchError(this.handleError)
+    );
 }
   /**
    * Obtenir les membres d'un pays AMCHAM - GET /api/companies/country-amcham/{countryAmchamId}

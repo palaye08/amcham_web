@@ -10,11 +10,16 @@ export interface CompaniesKpiResponse {
   percentageChange: number;
   monthlyStats: any | null;
 }
+
+// Interfaces mises à jour
 export interface MembresParams {
   page?: number;
   size?: number;
   name?: string;
   sector?: string;
+  sectorId?: number;
+  countryId?: number;
+  country?: string;
 }
 
 
@@ -413,36 +418,44 @@ getCompanyImageUrl(picture: string): string {
             catchError(this.handleError)
           );
       }
-  /**
-   * Obtenir les membres d'un pays AMCHAM - GET /api/companies/country-amcham/{countryAmchamId}
-   */
-  getMembres(countryAmchamId: number, params?: MembresParams): Observable<CompanySearchResponse> {
-    let httpParams = new HttpParams();
-    
-    // Paramètres de pagination
-    if (params?.page !== undefined) {
-      httpParams = httpParams.set('page', params.page.toString());
-    }
-    if (params?.size !== undefined) {
-      httpParams = httpParams.set('size', params.size.toString());
-    }
-    
-    // Paramètres de recherche
-    if (params?.name) {
-      httpParams = httpParams.set('name', params.name);
-    }
-    if (params?.sector) {
-      httpParams = httpParams.set('sector', params.sector);
-    }
-
-    return this.http.get<CompanySearchResponse>(
-      `${this.baseUrl}/api/companies/search
-`,
-      { params: httpParams }
-    ).pipe(
-      catchError(this.handleError)
-    );
+/**
+ * Obtenir les membres avec filtres - GET /api/companies/search
+ */
+getMembres(params?: MembresParams): Observable<CompanySearchResponse> {
+  let httpParams = new HttpParams();
+  
+  // Paramètres de pagination
+  if (params?.page !== undefined) {
+    httpParams = httpParams.set('page', params.page.toString());
   }
+  if (params?.size !== undefined) {
+    httpParams = httpParams.set('size', params.size.toString());
+  }
+  
+  // Paramètres de recherche
+  if (params?.name) {
+    httpParams = httpParams.set('name', params.name);
+  }
+  if (params?.sector) {
+    httpParams = httpParams.set('sector', params.sector);
+  }
+  if (params?.sectorId) {
+    httpParams = httpParams.set('sectorId', params.sectorId.toString());
+  }
+  if (params?.countryId) {
+    httpParams = httpParams.set('countryId', params.countryId.toString());
+  }
+  if (params?.country) {
+    httpParams = httpParams.set('country', params.country);
+  }
+
+  return this.http.get<CompanySearchResponse>(
+    `${this.baseUrl}/api/companies/search`,
+    { params: httpParams }
+  ).pipe(
+    catchError(this.handleError)
+  );
+}
   /**
    * Messages d'erreur selon le statut HTTP
    */
