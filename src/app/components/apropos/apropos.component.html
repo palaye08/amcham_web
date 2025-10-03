@@ -32,7 +32,7 @@
         <div class="bg-white rounded-lg shadow-sm p-6">
           <div class="flex items-center mb-4">
             <div class="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mr-4">
-              <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo" class="w-full h-full object-cover rounded-full">
+              <img *ngIf="logoPreview" [src]=" 'https://wakana.online/repertoire_amchams/' + logoPreview" alt="Logo" class="w-full h-full object-cover rounded-full">
               <img *ngIf="!logoPreview" class="h-12 w-12 rounded-[50%]" src="../assets/logoW.png" alt="">
             </div>
             <div>
@@ -90,7 +90,7 @@
               <!-- Logo display -->
               <div class="flex-shrink-0">
                 <div class="w-24 h-24 bg-blue-900 rounded-full flex items-center justify-center">
-                  <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo" class="w-full h-full object-cover rounded-full">
+                  <img *ngIf="logoPreview" [src]="'https://wakana.online/repertoire_amchams/' +  logoPreview" alt="Logo" class="w-full h-full object-cover rounded-full">
                   <img *ngIf="!logoPreview" class="h-24 w-24 rounded-[50%]" src="../assets/logoW.png" alt="Logo">
                 </div>
               </div>

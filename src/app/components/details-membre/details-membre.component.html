@@ -1,28 +1,77 @@
 <app-header></app-header>
 
 <div class="min-h-screen bg-gray-50" *ngIf="membre && !isLoading">
-  <!-- Header Section avec fond #101E35 -->
-  <div class="bg-[#101E35] text-white py-8">
+  <!-- Header Section avec fond #141E34 -->
+  <div class="bg-[#0F1C33] text-white py-12">
     <div class="w-[90%] mx-auto">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-6">
-          <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-            <!-- <span class="text-[#101E35] font-bold text-2xl">{{ getInitial(membre.name) }}</span> -->
-            <img *ngIf="membre.logo" [src]="'https://wakana.online/repertoire_amchams/' + membre.logo" 
+      <!-- Breadcrumb -->
+      <div class="flex items-center space-x-2 text-sm text-gray-400 mb-8">
+        <a href="/accueil" class="hover:text-white transition-colors">Accueil</a>
+        <span>/</span>
+        <a href="/membres" class="hover:text-white transition-colors">Membres</a>
+        <span>/</span>
+        <span class="text-white">{{ membre.name }}</span>
+      </div>
+
+      <div class="flex items-start justify-between">
+        <div class="flex items-start space-x-6">
+          <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+            <img *ngIf="membre.logo" 
+                 [src]="'https://wakana.online/repertoire_amchams/' + membre.logo" 
                  [alt]="membre.name" 
-                 class="w-16 h-16 object-contain rounded-full">
+                 class="w-24 h-24 object-contain rounded-full">
+            <span *ngIf="!membre.logo" class="text-[#141E34] font-bold text-3xl">{{ getInitial(membre.name) }}</span>
           </div>
           <div>
-            <h1 class="text-3xl font-bold mb-1">{{ membre.name }}</h1>
-            <p class="text-blue-200 text-lg font-medium mb-1">{{ membre.sector }}</p>
-            <p class="text-sm text-gray-300">
-              {{ membre.city }} 
-              {{ membre.country }}
-            </p>
+            <h1 class="text-3xl font-bold mb-3">{{ membre.name }}</h1>
+            <div class="flex items-center space-x-6 text-sm">
+              <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M13.5 1.5H4.5C3.67157 1.5 3 2.17157 3 3V15C3 15.8284 3.67157 16.5 4.5 16.5H13.5C14.3284 16.5 15 15.8284 15 15V3C15 2.17157 14.3284 1.5 13.5 1.5Z" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6.75 16.5V13.5H11.25V16.5" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6 4.5H6.0075" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 4.5H12.0075" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9 4.5H9.0075" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9 7.5H9.0075" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9 10.5H9.0075" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 7.5H12.0075" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 10.5H12.0075" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6 7.5H6.0075" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6 10.5H6.0075" stroke="#D11E2B" stroke-width="1.125" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  
+                <span class="text-gray-300">{{ membre.sector }}</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 7.5C15 12.375 9 16.5 9 16.5C9 16.5 3 12.375 3 7.5C3 5.9087 3.63214 4.38258 4.75736 3.25736C5.88258 2.13214 7.4087 1.5 9 1.5C10.5913 1.5 12.1174 2.13214 13.2426 3.25736C14.3679 4.38258 15 5.9087 15 7.5Z" stroke="#D11E2B" stroke-width="1.5"/>
+                  <path d="M11.25 7.5C11.25 8.09674 11.0129 8.66903 10.591 9.09099C10.169 9.51295 9.59674 9.75 9 9.75C8.40326 9.75 7.83097 9.51295 7.40901 9.09099C6.98705 8.66903 6.75 8.09674 6.75 7.5C6.75 6.90326 6.98705 6.33097 7.40901 5.90901C7.83097 5.48705 8.40326 5.25 9 5.25C9.59674 5.25 10.169 5.48705 10.591 5.90901C11.0129 6.33097 11.25 6.90326 11.25 7.5Z" stroke="#D11E2B" stroke-width="1.5"/>
+                  </svg>
+                  
+                <span class="text-gray-300"> {{ membre.country }}</span>
+              </div>
+              <div class="flex items-center space-x-2" *ngIf="">
+                <svg class="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+                </svg>
+                <span class="text-gray-300">{{ texts.founded }} </span>
+              </div>
+              <div class="flex items-center space-x-1" *ngIf="ratings && ratings.length > 0">
+                <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                </svg>
+                <span class="text-white font-medium">{{ getAverageRating() }}</span>
+                <span class="text-gray-400">({{ getTotalReviews() }} {{ getReviewText() }})</span>
+              </div>
+            </div>
           </div>
         </div>
-        <button (click)="laisserAvis()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-          {{ texts.giveReview }}
+        <button (click)="laisserAvis()" class="flex gap-1  bg-white hover:bg-gray-100 text-[#141E34] relative right-5 px-5 py-2 rounded-full font-medium transition-colors">
+          <svg class="w-6 h-6" width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3.49983 13.4999C3.41912 13.5013 3.33927 13.4831 3.2671 13.4469C3.19494 13.4108 3.13261 13.3576 3.08544 13.2921C3.03828 13.2266 3.00767 13.1507 2.99624 13.0708C2.98482 12.9908 2.99291 12.9093 3.01983 12.8332L4.0865 9.33325C3.85494 8.7313 3.73739 8.09152 3.73983 7.44658C3.73877 6.73705 3.87929 6.03445 4.15317 5.37991C4.42154 4.75341 4.80609 4.18337 5.2865 3.69991C5.76872 3.21489 6.34188 2.82976 6.97317 2.56658C7.62578 2.28952 8.32751 2.14673 9.0365 2.14673C9.74549 2.14673 10.4472 2.28952 11.0998 2.56658C12.0559 2.97611 12.8714 3.65626 13.4459 4.52332C14.0204 5.39037 14.3288 6.40649 14.3332 7.44658C14.329 8.8513 13.7708 10.1977 12.7798 11.1932C12.2964 11.6737 11.7263 12.0582 11.0998 12.3266C9.83927 12.8545 8.42415 12.8784 7.1465 12.3932L3.6465 13.4599C3.59977 13.4802 3.55038 13.4937 3.49983 13.4999ZM9.03317 3.16658C8.1888 3.17023 7.36395 3.42087 6.66029 3.88761C5.95663 4.35434 5.40492 5.01677 5.07317 5.79325C4.63239 6.86064 4.63239 8.05918 5.07317 9.12658C5.11288 9.23643 5.11288 9.35672 5.07317 9.46658L4.25317 12.2466L7.01983 11.4066C7.12969 11.3669 7.24998 11.3669 7.35983 11.4066C7.88812 11.6259 8.4545 11.7388 9.0265 11.7388C9.5985 11.7388 10.1649 11.6259 10.6932 11.4066C11.2137 11.1874 11.6859 10.8678 12.0826 10.4658C12.4794 10.0639 12.793 9.58768 13.0054 9.06439C13.2178 8.54109 13.3249 7.98102 13.3205 7.41627C13.3161 6.85152 13.2003 6.29318 12.9798 5.77325C12.6488 5.00054 12.0985 4.34182 11.3971 3.87853C10.6956 3.41525 9.87379 3.16773 9.03317 3.16658Z" fill="#D11E2B"/>
+            </svg>
+            
+          <p>{{ texts.giveReview }}</p>
         </button>
       </div>
     </div>
@@ -33,12 +82,13 @@
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
       
       <!-- Left Sidebar -->
-      <div class="lg:col-span-1 space-y-6">
+      <div class="lg:col-span-1">
         
-        <!-- Coordonnées -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
+        <!-- Coordonnées et Horaires d'ouverture - Une seule carte -->
+        <div class="bg-white rounded-lg p-6">
+          <!-- Coordonnées -->
           <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ texts.coordinates }}</h2>
-          <div class="space-y-4">
+          <div class="space-y-4 mb-8">
             <div class="flex items-start space-x-3">
               <svg class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
@@ -73,26 +123,24 @@
               </svg>
               <div>
                 <p class="text-gray-900 font-medium">{{ texts.website }}</p>
-                <p class="text-blue-600 hover:text-blue-800 cursor-pointer text-sm" (click)="visitWebsite()">{{ membre.webLink }}</p>
+                <p class="text-blue-600 hover:text-blue-800 cursor-pointer text-sm break-all" (click)="visitWebsite()">{{ membre.webLink }}</p>
               </div>
             </div>
           </div>
-          <button (click)="contacter()" class="w-full mt-6 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors">
-            {{ texts.contact }}
-          </button>
-        </div>
 
-        <!-- Horaires d'ouverture -->
-        <div class="bg-white rounded-lg shadow-lg p-6" *ngIf="horaires && horaires.length > 0">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ texts.openingHours }}</h2>
-          <div class="space-y-2">
-            <div *ngFor="let jour of getTranslatedDays()" 
-                 class="flex justify-between items-center py-1">
-              <span class="text-gray-600">{{ jour }}</span>
-              <span [ngClass]="getFormattedHoraires()[jour] === texts.closed ? 'text-red-600 font-medium' : 'text-gray-900'"
-                    class="text-sm">
-                {{ getFormattedHoraires()[jour] }}
-              </span>
+
+          <!-- Horaires d'ouverture -->
+          <div *ngIf="horaires && horaires.length > 0">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ texts.openingHours }}</h2>
+            <div class="space-y-2">
+              <div *ngFor="let jour of getTranslatedDays()" 
+                   class="flex justify-between items-center py-1">
+                <span class="text-gray-600">{{ jour }}</span>
+                <span [ngClass]="getFormattedHoraires()[jour] === texts.closed ? 'text-red-600 font-medium' : 'text-gray-900'"
+                      class="text-sm">
+                  {{ getFormattedHoraires()[jour] }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -102,12 +150,12 @@
       <div class="lg:col-span-3 space-y-8">
         
         <!-- Présentation -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="bg-white rounded-lg p-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ texts.presentation }}</h2>
           <p class="text-gray-600 leading-relaxed mb-6">{{ membre.description }}</p>
           
           <!-- Services -->
-          <div class="mb-6">
+          <!-- <div class="mb-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ texts.services }}</h3>
             <ul class="grid grid-cols-1 md:grid-cols-2 gap-2">
               <li *ngFor="let service of getServices()" class="flex items-center space-x-2">
@@ -119,7 +167,6 @@
             </ul>
           </div>
 
-          <!-- Certifications -->
           <div>
             <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ texts.certifications }}</h3>
             <div class="flex flex-wrap gap-2">
@@ -128,11 +175,11 @@
                 {{ cert }}
               </span>
             </div>
-          </div>
+          </div> -->
         </div>
 
         <!-- Galerie photos -->
-        <div class="bg-white rounded-lg shadow-lg p-6" *ngIf="membre.pictures && membre.pictures.length > 0">
+        <div class="bg-white rounded-lg p-6" *ngIf="membre && membre.pictures && membre.pictures.length > 0">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ texts.photoGallery }}</h2>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div *ngFor="let photo of membre.pictures" class="aspect-w-16 aspect-h-12 bg-gray-200 rounded-lg overflow-hidden">
@@ -146,7 +193,7 @@
         </div>
 
         <!-- Vidéo de présentation -->
-        <div class="bg-white rounded-lg shadow-lg p-6" *ngIf="membre.videoLink">
+        <div class="bg-white rounded-lg p-6" *ngIf="membre?.videoLink">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ texts.presentationVideo }}</h2>
           <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-lg overflow-hidden relative group cursor-pointer"
                (click)="visitWebsite()">
@@ -162,7 +209,7 @@
         </div>
 
         <!-- Localisation -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="bg-white rounded-lg p-6">
           <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ texts.location }}</h2>
           <div class="h-64 bg-blue-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-blue-200 transition-colors"
                (click)="openMap()">
@@ -181,41 +228,48 @@
     </div>
   </div>
 
-  <!-- Avis & notes - Section pleine largeur -->
-  <div class="w-full bg-white py-8">
-    <div class="w-[90%] mx-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-semibold text-gray-900">{{ texts.reviews }}</h2>
-        <button (click)="laisserAvis()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          {{ texts.giveReview }}
-        </button>
-      </div>
-      
-      <!-- Cartes d'avis avec fond blanc et shadow -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div *ngFor="let avis of avisSimules" class="bg-white rounded-lg shadow-lg p-4 border">
-          <div class="text-center mb-4">
-            <div class="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
-              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
-            </div>
-            <h4 class="font-semibold text-gray-900 mb-1">{{ avis.nom }}</h4>
-            <div class="flex justify-center items-center space-x-1 mb-3">
-              <svg *ngFor="let star of getStarsArray(avis.note)" 
-                   class="w-4 h-4"
-                   [class.text-yellow-400]="star === 1"
-                   [class.text-gray-300]="star === 0"
-                   fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
+<!-- Avis & notes - Section pleine largeur -->
+<div class="w-full bg-white py-8">
+  <div class="w-[90%] mx-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-semibold text-gray-900">{{ texts.reviews }}</h2>
+      <button (click)="laisserAvis()" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white flex items-center gap-2" style="background-color: #AA1520;" onmouseover="this.style.backgroundColor='#8B1018'" onmouseout="this.style.backgroundColor='#AA1520'">
+        <svg class="w-4 h-4" width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3.49983 13.4999C3.41912 13.5013 3.33927 13.4831 3.2671 13.4469C3.19494 13.4108 3.13261 13.3576 3.08544 13.2921C3.03828 13.2266 3.00767 13.1507 2.99624 13.0708C2.98482 12.9908 2.99291 12.9093 3.01983 12.8332L4.0865 9.33325C3.85494 8.7313 3.73739 8.09152 3.73983 7.44658C3.73877 6.73705 3.87929 6.03445 4.15317 5.37991C4.42154 4.75341 4.80609 4.18337 5.2865 3.69991C5.76872 3.21489 6.34188 2.82976 6.97317 2.56658C7.62578 2.28952 8.32751 2.14673 9.0365 2.14673C9.74549 2.14673 10.4472 2.28952 11.0998 2.56658C12.0559 2.97611 12.8714 3.65626 13.4459 4.52332C14.0204 5.39037 14.3288 6.40649 14.3332 7.44658C14.329 8.8513 13.7708 10.1977 12.7798 11.1932C12.2964 11.6737 11.7263 12.0582 11.0998 12.3266C9.83927 12.8545 8.42415 12.8784 7.1465 12.3932L3.6465 13.4599C3.59977 13.4802 3.55038 13.4937 3.49983 13.4999ZM9.03317 3.16658C8.1888 3.17023 7.36395 3.42087 6.66029 3.88761C5.95663 4.35434 5.40492 5.01677 5.07317 5.79325C4.63239 6.86064 4.63239 8.05918 5.07317 9.12658C5.11288 9.23643 5.11288 9.35672 5.07317 9.46658L4.25317 12.2466L7.01983 11.4066C7.12969 11.3669 7.24998 11.3669 7.35983 11.4066C7.88812 11.6259 8.4545 11.7388 9.0265 11.7388C9.5985 11.7388 10.1649 11.6259 10.6932 11.4066C11.2137 11.1874 11.6859 10.8678 12.0826 10.4658C12.4794 10.0639 12.793 9.58768 13.0054 9.06439C13.2178 8.54109 13.3249 7.98102 13.3205 7.41627C13.3161 6.85152 13.2003 6.29318 12.9798 5.77325C12.6488 5.00054 12.0985 4.34182 11.3971 3.87853C10.6956 3.41525 9.87379 3.16773 9.03317 3.16658Z" fill="white"/>
+        </svg>
+        {{ texts.giveReview }}
+      </button>
+    </div>
+    
+    <!-- Message si aucun avis -->
+    <div *ngIf="!ratings || ratings.length === 0" class="text-center py-12 text-gray-500">
+      <p>{{ currentLang === 'fr' ? 'Aucun avis pour le moment' : 'No reviews yet' }}</p>
+    </div>
+    
+    <!-- Cartes d'avis avec shadow -->
+    <div *ngIf="ratings && ratings.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div *ngFor="let rating of ratings" class="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow">
+        <div class="text-center mb-4">
+          <div class="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mx-auto mb-3 flex items-center justify-center">
+            <span class="text-2xl font-bold text-gray-600">{{ getInitial(rating.firstName) }}</span>
           </div>
-          <p class="text-gray-600 text-sm text-center">{{ currentLang === 'fr' ? avis.commentaireFr : avis.commentaireEn }}</p>
+          <h4 class="font-semibold text-gray-900 mb-1 text-lg">{{ rating.firstName }} {{ rating.lastName }}</h4>
+          <p class="text-xs text-gray-500 mb-3">{{ rating.companyName }}</p>
+          <div class="flex justify-center items-center space-x-1 mb-3">
+            <svg *ngFor="let star of getStarsArray(rating.score)" 
+                 class="w-5 h-5"
+                 [class.text-yellow-400]="star === 1"
+                 [class.text-gray-300]="star === 0"
+                 fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
         </div>
+        <p class="text-gray-600 text-sm text-center leading-relaxed">{{ rating.comment }}</p>
       </div>
     </div>
   </div>
+</div>
 
   <!-- Membres similaires - Section pleine largeur avec fond #F4F6FA -->
   <div class="w-full bg-[#F4F6FA] py-8">
@@ -231,9 +285,9 @@
       </div>
       <p class="text-gray-600 text-sm mb-6">{{ texts.discoverMembers }}</p>
       
-      <!-- Cartes des membres similaires avec fond blanc -->
+      <!-- Cartes des membres similaires sans shadow -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div *ngFor="let membreSimilaire of membresSimilaires" class="bg-white rounded-lg shadow-lg p-6">
+        <div *ngFor="let membreSimilaire of membresSimilaires" class="bg-white rounded-lg p-6 border">
           <div class="flex items-center space-x-3 mb-4">
             <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center flex-shrink-0">
               <span class="text-blue-600 font-bold text-lg">{{ getInitial(membreSimilaire.name) }}</span>
@@ -283,8 +337,8 @@
 <div class="min-h-screen bg-gray-50 flex items-center justify-center" *ngIf="isLoading">
   <div class="text-center">
     <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600 mx-auto mb-4"></div>
-    <h2 class="text-xl font-semibold text-gray-900">Chargement...</h2>
-    <p class="text-gray-600">Récupération des informations du membre</p>
+    <h2 class="text-xl font-semibold text-gray-900">{{ currentLang === 'fr' ? 'Chargement...' : 'Loading...' }}</h2>
+    <p class="text-gray-600">{{ currentLang === 'fr' ? 'Récupération des informations du membre' : 'Fetching member information' }}</p>
   </div>
 </div>
 
@@ -302,28 +356,31 @@
   </div>
 </div>
 
-<!-- Footer -->
-<footer class="bg-blue-900 text-white py-12">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center">
-      <p class="text-blue-200">&copy; 2025 AmCham. {{ currentLang === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.' }}</p>
-      <div class="flex justify-center space-x-6 mt-6">
-        <a href="#" class="text-blue-200 hover:text-white transition-colors">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
-          </svg>
-        </a>
-        <a href="#" class="text-blue-200 hover:text-white transition-colors">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-          </svg>
-        </a>
-        <a href="#" class="text-blue-200 hover:text-white transition-colors">
-          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
-          </svg>
-        </a>
+  <!-- Footer -->
+  <footer class="bg-[#132742]  text-white py-2">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class=" items-center flex">
+        <p class="text-blue-200 relative top-2 right-[12%]">&copy; 2025 AmCham. Tous droits réservés.</p>
+        <div class="flex relative left-[80%]  space-x-6 mt-6">
+          <a href="#" class="text-blue-200 hover:text-white transition-colors">
+            <svg class="w-6 h-6" width="9" height="17" viewBox="0 0 9 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M6.18656 6.17318V4.58568C6.18656 3.86901 6.35123 3.50651 7.50823 3.50651H8.95989V0.839844H6.53756C3.56923 0.839844 2.58989 2.14818 2.58989 4.39401V6.17318H0.639893V8.83984H2.58989V16.8398H6.18656V8.83984H8.63056L8.95989 6.17318H6.18656Z" fill="white"/>
+              </svg>
+              
+          </a>
+          <a  href="#" class="text-blue-200 hover:text-white transition-colors">
+            <svg class="w-6 h-6" width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M11.4786 0.399902H1.86414C1.339 0.399902 0.879883 0.778001 0.879883 1.29714V10.9326C0.879883 11.4548 1.339 11.9199 1.86414 11.9199H11.4756C12.0038 11.9199 12.3999 11.4518 12.3999 10.9326V1.29714C12.4029 0.778001 12.0038 0.399902 11.4786 0.399902ZM4.45091 10.0024H2.80048V4.87111H4.45091V10.0024ZM3.68271 4.09088H3.67071C3.14257 4.09088 2.80048 3.69778 2.80048 3.20565C2.80048 2.70452 3.15157 2.32042 3.69171 2.32042C4.23185 2.32042 4.56194 2.70152 4.57394 3.20565C4.57394 3.69778 4.23185 4.09088 3.68271 4.09088ZM10.4823 10.0025H8.83192V7.19675C8.83192 6.52457 8.59186 6.06545 7.9947 6.06545C7.53858 6.06545 7.26851 6.37453 7.14848 6.67461C7.10347 6.78264 7.09147 6.92968 7.09147 7.07972V10.0025H5.44104V4.87114H7.09147V5.58533C7.33153 5.24324 7.70663 4.75111 8.57985 4.75111C9.66313 4.75111 10.4823 5.4653 10.4823 7.0047V10.0025Z" fill="white"/>
+              </svg>
+              
+          </a>
+          <a href="#" class="text-blue-200 hover:text-white transition-colors">
+            <svg class="w-6 h-6" width="14" height="11" viewBox="0 0 14 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M13.56 1.25337C13.088 1.45871 12.5835 1.59737 12.0519 1.66137C12.5944 1.34137 13.0121 0.834706 13.2074 0.232039C12.7002 0.528039 12.1387 0.744039 11.5392 0.858706C11.0591 0.354706 10.3756 0.0400391 9.62155 0.0400391C8.17039 0.0400391 6.99591 1.19737 6.99591 2.62404C6.99591 2.82671 7.01761 3.02404 7.06372 3.21337C4.8802 3.10671 2.94352 2.07737 1.64969 0.512039C1.42456 0.893372 1.29436 1.33871 1.29436 1.81071C1.29436 2.70671 1.7609 3.49871 2.46613 3.96271C2.03214 3.95204 1.62528 3.83471 1.27266 3.64004C1.27266 3.65071 1.27266 3.66137 1.27266 3.67204C1.27266 4.92537 2.17862 5.96804 3.38023 6.20537C3.16052 6.26404 2.92725 6.29604 2.68855 6.29604C2.52038 6.29604 2.35492 6.28004 2.19489 6.24804C2.52852 7.27471 3.49957 8.02137 4.64965 8.04271C3.75183 8.73604 2.61803 9.14937 1.38658 9.14937C1.17501 9.14937 0.966155 9.13604 0.76001 9.11204C1.91822 9.85337 3.29885 10.28 4.77984 10.28C9.61612 10.28 12.258 6.34137 12.258 2.92537C12.258 2.81337 12.2553 2.70137 12.2499 2.59204C12.7626 2.22671 13.2074 1.77337 13.56 1.25337Z" fill="white"/>
+              </svg>
+              
+          </a>
+        </div>
       </div>
     </div>
-  </div>
-</footer>
+  </footer>

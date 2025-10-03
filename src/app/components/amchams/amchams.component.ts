@@ -32,11 +32,17 @@ export class AmchamsComponent implements OnInit, OnDestroy {
   errorMessage = '';
   successMessage = '';
 
+  // Pagination
+  currentPage = 1;
+  itemsPerPage = 4;
+  totalPages = 0;
+  searchKeyword: any;
+
   // Statistiques calculées
   get stats() {
     const totalAmchams = this.amchams.length;
     const lastMonthAmchams = this.amchams.filter(a => {
-      const amchamDate = new Date(a.id); // Utiliser une vraie date si disponible
+      const amchamDate = new Date(a.id);
       const lastMonth = new Date();
       lastMonth.setMonth(lastMonth.getMonth() - 1);
       return amchamDate > lastMonth;
@@ -97,7 +103,13 @@ export class AmchamsComponent implements OnInit, OnDestroy {
       deleteSuccess: 'Amcham supprimé avec succès',
       saveSuccess: 'Amcham enregistré avec succès',
       updateSuccess: 'Amcham modifié avec succès',
-      error: 'Une erreur est survenue'
+      error: 'Une erreur est survenue',
+      showing: 'Affichage de',
+      to: 'à',
+      of: 'sur',
+      results: 'résultats',
+      previous: 'Précédent',
+      next: 'Suivant'
     } : {
       amchamsManagement: 'Amchams Management',
       totalAmchams: 'Total Amchams',
@@ -138,7 +150,13 @@ export class AmchamsComponent implements OnInit, OnDestroy {
       deleteSuccess: 'Amcham deleted successfully',
       saveSuccess: 'Amcham saved successfully',
       updateSuccess: 'Amcham updated successfully',
-      error: 'An error occurred'
+      error: 'An error occurred',
+      showing: 'Showing',
+      to: 'to',
+      of: 'of',
+      results: 'results',
+      previous: 'Previous',
+      next: 'Next'
     };
   }
 
@@ -180,9 +198,6 @@ export class AmchamsComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Charger la liste des pays
-   */
   loadCountries(): void {
     this.countryAmchamService.getCountries().subscribe({
       next: (countries) => {
@@ -195,19 +210,24 @@ export class AmchamsComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Charger la liste des Amchams
-   */
   loadAmchams(): void {
     this.isLoading = true;
     this.errorMessage = '';
     
     this.countryAmchamService.getAllCountryAmchams().subscribe({
-      next: (response) => {
-        this.amchams = response || []; // <-- on récupère le tableau
-        console.log('Liste des Amchams chargée:', this.amchams);
-  
-        this.filterAmchams();
+      next: (response: any) => {
+        console.log('Réponse complète:', response);
+        
+        // Vérification plus robuste
+        if (response?.content && Array.isArray(response.content)) {
+          this.amchams = response.content as CountryAmchamResponse[];
+          console.log('Liste des Amchams chargée:', this.amchams);
+          this.filterAmchams();
+        } else {
+          console.error('Format de réponse inattendu:', response);
+          this.amchams = [];
+          this.filteredAmchams = [];
+        }
         this.isLoading = false;
       },
       error: (error) => {
@@ -217,33 +237,102 @@ export class AmchamsComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
 
-  /**
-   * Recherche et filtrage
-   */
   onSearch(event: any): void {
     this.searchTerm = event.target.value.toLowerCase();
+    this.currentPage = 1; // Réinitialiser à la première page lors de la recherche
     this.filterAmchams();
   }
 
-  private filterAmchams(): void {
-    if (!this.searchTerm) {
+  filterAmchams(): void {
+    // S'assurer que this.amchams est un tableau avant de filtrer
+    if (!Array.isArray(this.amchams)) {
+      console.error('this.amchams n\'est pas un tableau:', this.amchams);
+      this.filteredAmchams = [];
+      return;
+    }
+  
+    if (!this.searchKeyword) {
       this.filteredAmchams = [...this.amchams];
       return;
     }
-
-    this.filteredAmchams = this.amchams.filter(amcham => {
-      return amcham.name.toLowerCase().includes(this.searchTerm) ||
-             amcham.email.toLowerCase().includes(this.searchTerm) ||
-             amcham.telephone.toLowerCase().includes(this.searchTerm) ||
-             amcham.address.toLowerCase().includes(this.searchTerm);
-    });
+  
+    this.filteredAmchams = this.amchams.filter(amcham =>
+      amcham.countryName && amcham.countryName.toLowerCase().includes(this.searchKeyword.toLowerCase())
+    );
   }
 
-  /**
-   * Ouvrir le modal d'ajout
-   */
+  // Obtenir les Amchams pour la page actuelle
+  get paginatedAmchams(): CountryAmchamResponse[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    return this.filteredAmchams.slice(startIndex, endIndex);
+  }
+
+  // Navigation pagination
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  // Générer le tableau des numéros de pages
+  get pageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxPagesToShow = 5;
+    
+    if (this.totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= this.totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (this.currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push(-1); // Ellipsis
+        pages.push(this.totalPages);
+      } else if (this.currentPage >= this.totalPages - 2) {
+        pages.push(1);
+        pages.push(-1); // Ellipsis
+        for (let i = this.totalPages - 3; i <= this.totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push(-1); // Ellipsis
+        pages.push(this.currentPage - 1);
+        pages.push(this.currentPage);
+        pages.push(this.currentPage + 1);
+        pages.push(-1); // Ellipsis
+        pages.push(this.totalPages);
+      }
+    }
+    
+    return pages;
+  }
+
+  // Informations de pagination
+  get paginationInfo(): string {
+    const start = (this.currentPage - 1) * this.itemsPerPage + 1;
+    const end = Math.min(this.currentPage * this.itemsPerPage, this.filteredAmchams.length);
+    const total = this.filteredAmchams.length;
+    
+    return `${this.texts.showing} ${start} ${this.texts.to} ${end} ${this.texts.of} ${total} ${this.texts.results}`;
+  }
+
   openAddAmchamModal(): void {
     this.isEditMode = false;
     this.selectedAmchamId = null;
@@ -253,9 +342,6 @@ export class AmchamsComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
   }
 
-  /**
-   * Fermer le modal
-   */
   closeAddAmchamModal(): void {
     this.showAddAmchamModal = false;
     this.isEditMode = false;
@@ -265,20 +351,15 @@ export class AmchamsComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
   }
 
-  /**
-   * Gestion de la sélection de fichier
-   */
   onFileSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
-      // Vérifier la taille du fichier (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         this.showError('Le fichier est trop volumineux (max 5MB)');
         event.target.value = '';
         return;
       }
 
-      // Vérifier le type de fichier
       if (!file.type.startsWith('image/')) {
         this.showError('Veuillez sélectionner une image');
         event.target.value = '';
@@ -287,7 +368,6 @@ export class AmchamsComponent implements OnInit, OnDestroy {
 
       this.selectedFile = file;
       
-      // Afficher le nom du fichier
       const fileNameSpan = document.getElementById('file-name');
       if (fileNameSpan) {
         fileNameSpan.textContent = file.name;
@@ -295,9 +375,6 @@ export class AmchamsComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Soumettre le formulaire (Créer ou Modifier)
-   */
   onSubmit(): void {
     if (this.amchamForm.valid) {
       this.isLoading = true;
@@ -314,7 +391,6 @@ export class AmchamsComponent implements OnInit, OnDestroy {
       };
 
       if (this.isEditMode && this.selectedAmchamId) {
-        // Mode modification
         this.countryAmchamService.updateCountryAmcham(this.selectedAmchamId, formData).subscribe({
           next: (response) => {
             this.showSuccess(this.texts.updateSuccess);
@@ -329,7 +405,6 @@ export class AmchamsComponent implements OnInit, OnDestroy {
           }
         });
       } else {
-        // Mode création
         this.countryAmchamService.saveCountryAmcham(formData).subscribe({
           next: (response) => {
             this.showSuccess(this.texts.saveSuccess);
@@ -347,25 +422,17 @@ export class AmchamsComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Voir les détails d'un Amcham
-   */
   viewAmcham(amcham: CountryAmchamResponse): void {
     console.log('View amcham:', amcham);
-    // TODO: Implémenter la vue détaillée
   }
 
-  /**
-   * Modifier un Amcham
-   */
   editAmcham(amcham: CountryAmchamResponse): void {
     this.isEditMode = true;
     this.selectedAmchamId = amcham.id;
     this.showAddAmchamModal = true;
     
-    // Pré-remplir le formulaire
     this.amchamForm.patchValue({
-      name: amcham.name,
+      name: amcham.countryName,
       countryId: amcham.countryId,
       address: amcham.address,
       telephone: amcham.telephone,
@@ -376,9 +443,6 @@ export class AmchamsComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
   }
 
-  /**
-   * Supprimer un Amcham
-   */
   deleteAmcham(amcham: CountryAmchamResponse): void {
     if (confirm(this.texts.confirmDelete)) {
       this.isLoading = true;
@@ -398,25 +462,16 @@ export class AmchamsComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Obtenir le drapeau du pays par ID
-   */
   getCountryFlagById(countryId: number): string {
-    const country = this.countries.find(c => c.id === countryId);
-    return country?.icon || '🌍';
-  }
+      const country = this.countries.find(c => c.id === countryId);
+      return country?.icon || '🌍';
+    }
 
-  /**
-   * Obtenir le nom du pays par ID
-   */
   getCountryNameById(countryId: number): string {
     const country = this.countries.find(c => c.id === countryId);
     return country?.name || 'N/A';
   }
 
-  /**
-   * Afficher un message d'erreur
-   */
   private showError(message: string): void {
     this.errorMessage = message;
     setTimeout(() => {
@@ -424,9 +479,6 @@ export class AmchamsComponent implements OnInit, OnDestroy {
     }, 5000);
   }
 
-  /**
-   * Afficher un message de succès
-   */
   private showSuccess(message: string): void {
     this.successMessage = message;
     setTimeout(() => {

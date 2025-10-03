@@ -183,8 +183,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     return this.currentLang === 'fr' ? [
       { number: this.formatNumber(this.totalContacts), label: 'Contacts établis', icon: 'users' },
       { number: this.formatNumber(this.totalCompanies), label: 'Entreprises', icon: 'building' },
-      { number: `${this.totalCountries}+`, label: 'Pays représentés', icon: 'globe' },
-      { number: `${this.totalSectors}+`, label: 'Secteurs d\'activités', icon: 'clock' }
+      { number: `${this.totalCountries}`, label: 'Pays représentés', icon: 'globe' },
+      { number: `${this.totalSectors}`, label: 'Secteurs d\'activités', icon: 'clock' }
     ] : [
       { number: this.formatNumber(this.totalContacts), label: 'Contacts established', icon: 'users' },
       { number: this.formatNumber(this.totalCompanies), label: 'Companies', icon: 'building' },
@@ -209,7 +209,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       membersDisplayed: 'membres affichés',
       contact: 'Contacter',
       viewProfile: 'Voir la fiche',
-      seeAllMembers: 'Voir plus',
+      seeAllMembers: 'Voir tous les membres',
       appTitle: 'Téléchargez l\'app AmCham',
       appDesc: 'Recherchez des membres, gérez votre profil, suivez les annonces et les événements — partout, à tout moment.',
       feature1: 'Recherche avancée (nom, pays, secteur)',
@@ -238,7 +238,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       membersDisplayed: 'members displayed',
       contact: 'Contact',
       viewProfile: 'View profile',
-      seeAllMembers: 'See more',
+      seeAllMembers: 'See all members',
       appTitle: 'Download the AmCham app',
       appDesc: 'Search for members, manage your profile, follow announcements and events — anywhere, anytime.',
       feature1: 'Advanced search (name, country, sector)',

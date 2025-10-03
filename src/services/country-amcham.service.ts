@@ -37,12 +37,12 @@ export interface Country {
 export interface CountryAmchamResponse {
   id: number;
   countryId: number;
-  name: string;
+  countryName: string;
   address: string;
   telephone: string;
   email: string;
   website: string;
-  logoUrl?: string;
+  logo: string;
 }
 
 @Injectable({

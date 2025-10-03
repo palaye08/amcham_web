@@ -1,6 +1,6 @@
 // company.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
@@ -66,6 +66,14 @@ export interface CompanyContactStats {
   lastMonth: number;
   currentYear: number;
 }
+export interface Ratings{
+  firstName: string;
+  lastName: string;
+  comment: string;
+  score: number;
+  companyName: string;
+}
+
 
 export interface CompanyFormData {
   name: string;
@@ -161,7 +169,30 @@ export class CompanyService {
       );
   }
   
-
+    /**
+   * Récupération du token
+   */
+    getToken(): string | null {
+      return localStorage.getItem('auth_token');
+    }
+      /**
+       * Intercepteur pour ajouter le token aux requêtes
+       */
+      getAuthHeaders(): HttpHeaders {
+        const token = this.getToken();
+        return new HttpHeaders({
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        });
+      }
+getRatings(companyId: number): Observable<Ratings[]> {
+    return this.http.get<Ratings[]>(`${this.baseUrl}/api/ratings/company/${companyId}`,
+    { headers: this.getAuthHeaders() }
+    )
+      .pipe(
+        catchError(this.handleError)
+      );
+}
   /**
    * Obtenir les membres d'un pays AMCHAM - GET /api/companies/country-amcham/{countryAmchamId}
    */

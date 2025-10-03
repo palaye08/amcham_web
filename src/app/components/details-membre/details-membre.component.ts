@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HeaderComponent } from "../header/header.component";
 import { LanguageService } from '../../../services/language.service';
-import { CompanyService, Company, CompanySchedule } from '../../../services/company.service';
+import { CompanyService, Company, CompanySchedule, Ratings } from '../../../services/company.service';
 import { Subscription, forkJoin } from 'rxjs';
 
 @Component({
@@ -21,6 +21,7 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
   membreId: number = 0;
   membre: Company | null = null;
   horaires: CompanySchedule[] = [];
+  ratings: Ratings[] = [];
   isLoading = true;
 
   // Textes dynamiques
@@ -60,7 +61,10 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
       friday: 'Vendredi',
       saturday: 'Samedi',
       sunday: 'Dimanche',
-      discoverMembers: 'Découvrez quelques-uns de nos membres et explorez les opportunités de collaboration'
+      discoverMembers: 'Découvrez quelques-uns de nos membres et explorez les opportunités de collaboration',
+      avis: 'avis',
+      review: 'review',
+      reviewsPlural: 'reviews'
     } : {
       giveReview: 'Give review',
       founded: 'Founded in',
@@ -96,9 +100,38 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
       friday: 'Friday',
       saturday: 'Saturday',
       sunday: 'Sunday',
-      discoverMembers: 'Discover some of our members and explore collaboration opportunities'
+      discoverMembers: 'Discover some of our members and explore collaboration opportunities',
+      avis: 'review',
+      review: 'review',
+      reviewsPlural: 'reviews'
     };
   }
+  avisSimules = [
+    {
+      id: 1,
+      nom: 'Emma Li',
+      note: 5,
+      commentaireFr: 'Excellent service client et solutions très innovantes. L\'équipe est toujours disponible pour aider et les résultats sont impressionnants.',
+      commentaireEn: 'Excellent customer service and very innovative solutions. The team is always available to help and the results are impressive.',
+      avatar: '/assets/avatar1.jpg'
+    },
+    {
+      id: 2,
+      nom: 'Maximilien Mbaye',
+      note: 5,
+      commentaireFr: 'Très satisfait de la qualité des services. J\'ai pu avoir un retour de contact sous 24h et l\'équipe connaît bien ses sujets.',
+      commentaireEn: 'Very satisfied with the quality of services. I got a response within 24 hours and the team knows their subjects well.',
+      avatar: '/assets/avatar2.jpg'
+    },
+    {
+      id: 3,
+      nom: 'Aicha Diop',
+      note: 5,
+      commentaireFr: 'Partenaire de confiance depuis plus de 3 ans. Leur expertise dans le domaine technologique est impressionnante.',
+      commentaireEn: 'Trusted partner for over 3 years. Their expertise in the technology field is impressive.',
+      avatar: '/assets/avatar3.jpg'
+    }
+  ];
 
   // Données simulées pour les sections non disponibles dans l'API
   membresSimilaires = [
@@ -131,33 +164,6 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
       locationEn: 'United States',
       phone: '+1 146-555-7890',
       website: 'www.example.us'
-    }
-  ];
-
-  avisSimules = [
-    {
-      id: 1,
-      nom: 'Emma Li',
-      note: 5,
-      commentaireFr: 'Excellent service client et solutions très innovantes. L\'équipe est toujours disponible pour aider et les résultats sont impressionnants.',
-      commentaireEn: 'Excellent customer service and very innovative solutions. The team is always available to help and the results are impressive.',
-      avatar: '/assets/avatar1.jpg'
-    },
-    {
-      id: 2,
-      nom: 'Maximilien Mbaye',
-      note: 5,
-      commentaireFr: 'Très satisfait de la qualité des services. J\'ai pu avoir un retour de contact sous 24h et l\'équipe connaît bien ses sujets.',
-      commentaireEn: 'Very satisfied with the quality of services. I got a response within 24 hours and the team knows their subjects well.',
-      avatar: '/assets/avatar2.jpg'
-    },
-    {
-      id: 3,
-      nom: 'Aicha Diop',
-      note: 5,
-      commentaireFr: 'Partenaire de confiance depuis plus de 3 ans. Leur expertise dans le domaine technologique est impressionnante.',
-      commentaireEn: 'Trusted partner for over 3 years. Their expertise in the technology field is impressive.',
-      avatar: '/assets/avatar3.jpg'
     }
   ];
 
@@ -215,7 +221,7 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
   loadMembreDetails() {
     this.isLoading = true;
     
-    // Charger les données du membre et ses horaires en parallèle
+    // Charger d'abord les données principales
     forkJoin({
       company: this.companyService.getCompanyById(this.membreId),
       schedules: this.companyService.getHoraire(this.membreId)
@@ -224,6 +230,17 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
         this.membre = company;
         this.horaires = schedules;
         this.isLoading = false;
+        
+        // Charger les ratings séparément (non bloquant)
+        this.companyService.getRatings(this.membreId).subscribe({
+          next: (ratings) => {
+            this.ratings = ratings;
+          },
+          error: (error) => {
+            console.warn('Aucun rating disponible pour cette entreprise', error);
+            this.ratings = [];
+          }
+        });
       },
       error: (error) => {
         console.error('Erreur lors du chargement des données du membre:', error);
@@ -231,6 +248,34 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
         this.router.navigate(['/membres']);
       }
     });
+  }
+
+  // Calculer la moyenne des notes
+  getAverageRating(): number {
+    if (!this.ratings || this.ratings.length === 0) {
+      return 0;
+    }
+    
+    const sum = this.ratings.reduce((acc, rating) => acc + rating.score, 0);
+    const average = sum / this.ratings.length;
+    
+    // Arrondir à 1 décimale
+    return Math.round(average * 10) / 10;
+  }
+
+  // Obtenir le nombre total d'avis
+  getTotalReviews(): number {
+    return this.ratings ? this.ratings.length : 0;
+  }
+
+  // Obtenir le texte d'avis (singulier/pluriel)
+  getReviewText(): string {
+    const count = this.getTotalReviews();
+    if (this.currentLang === 'fr') {
+      return count <= 1 ? this.texts.avis : this.texts.avis;
+    } else {
+      return count <= 1 ? this.texts.review : this.texts.reviewsPlural;
+    }
   }
 
   // Méthode utilitaire pour obtenir la propriété traduite
