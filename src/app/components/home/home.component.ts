@@ -50,7 +50,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Données des publicités dynamiques
   ads: AdResponse[] = [];
   isAdsLoading = false;
-  
+
+  displayedPartenaires: Partenaire[] = [];
+  currentPartnerIndex: number = 0;
+  noTransition: boolean = false;
+  private partnerInterval?: any;
+
   currentSlideIndex = 0;
   private slideInterval: any;
   private langSubscription!: Subscription;
@@ -63,7 +68,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   selectedCountryId: number | undefined;
   selectedSectorId: number | undefined;
   isSearching = false;
-  
+  isSearchActive = false;
+
   // Listes pour les dropdowns
   countries: Country[] = [];
   sectors: SecteurResponse[] = [];
@@ -121,7 +127,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (pictures && pictures.length > 0) {
       return this.homeService.getMemberImageUrl(pictures);
     }
-    return 'assets/default-member.png'; // Image par défaut si aucune image n'est disponible
+    return 'assets/default-member.png';
   }
 
   // Slides statiques de fallback (en anglais)
@@ -160,14 +166,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   ];
 
-  // Getter pour les slides héro (dynamique ou fallback)
   get heroSlides() {
     if (this.ads.length === 0) {
-      // Fallback sur les slides statiques si aucune pub n'est chargée
       return this.currentLang === 'fr' ? this.heroSlidesFr : this.heroSlidesEn;
     }
-    
-    // Convertir les ads en format slide
+
     return this.ads.map(ad => ({
       title: this.extractTitle(ad.title),
       subtitle: this.extractSubtitle(ad.title),
@@ -260,7 +263,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     private languageService: LanguageService,
     private homeService: HomeService,
     private secteurService: SecteurService,
-    private partenaireService: PartenaireService 
+    private partenaireService: PartenaireService
   ) { }
 
   ngOnInit(): void {
@@ -268,13 +271,10 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.currentLang = lang;
       this.updateMembresLanguage();
     });
-    
+
     this.currentLang = this.languageService.getCurrentLanguage();
-    
-    // Charger les ads en premier
+
     this.loadAds();
-    
-    // Puis charger les autres données
     this.loadHomeData();
     this.loadCountriesAndSectors();
     this.loadPartners();
@@ -287,20 +287,19 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.langSubscription) {
       this.langSubscription.unsubscribe();
     }
+    if (this.partnerInterval) {
+      clearInterval(this.partnerInterval);
+    }
   }
 
-  /**
-   * Charger les publicités depuis l'API
-   */
   loadAds(): void {
     this.isAdsLoading = true;
-    
+
     this.homeService.getAds({ page: 0, size: 10 }).subscribe({
       next: (response) => {
         this.ads = response.content;
         this.isAdsLoading = false;
-        
-        // Démarrer le slideshow avec les nouvelles données
+
         if (this.ads.length > 0) {
           this.currentSlideIndex = 0;
           if (this.slideInterval) {
@@ -312,39 +311,34 @@ export class HomeComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Erreur lors du chargement des publicités:', error);
         this.isAdsLoading = false;
-        // Les slides statiques seront utilisés comme fallback
         this.startSlideShow();
       }
     });
   }
 
-  /**
-   * Obtenir l'URL complète de l'image de la publicité
-   */
+  contactMembre(membre: MembreDisplay): void {
+    if (membre.email) {
+      window.location.href = `mailto:${membre.email}`;
+    } else {
+      console.log('Contacter:', membre.nom);
+    }
+  }
+
   getAdImageUrl(webImg: string): string {
     return this.homeService.getAdWebImageUrl(webImg);
   }
 
-  /**
-   * Extraire le titre principal (avant le tiret ou tout le texte)
-   */
   private extractTitle(fullTitle: string): string {
     const parts = fullTitle.split('–');
     if (parts.length === 0) return fullTitle;
     return parts[0].trim();
   }
 
-  /**
-   * Extraire le sous-titre (après le tiret si existe)
-   */
   private extractSubtitle(fullTitle: string): string {
     const parts = fullTitle.split('–');
     return parts.length > 1 ? parts[1].trim() : '';
   }
 
-  /**
-   * Formater les dates de début et fin pour l'affichage
-   */
   private formatAdDates(startDate: string, endDate: string): string {
     if (this.currentLang === 'fr') {
       return `Du ${startDate} au ${endDate}`;
@@ -353,9 +347,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Ouvrir le lien de la publicité
-   */
   openAdLink(): void {
     const currentAd = this.ads[this.currentSlideIndex];
     if (currentAd && currentAd.link) {
@@ -371,6 +362,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.partenaireService.getPartners().subscribe({
       next: (partenaires) => {
         this.partenaires = partenaires;
+
+        if (this.partenaires.length < 3) {
+          while (this.partenaires.length < 3) {
+            this.partenaires = [...this.partenaires, ...this.partenaires.slice(0, 3 - this.partenaires.length)];
+          }
+          this.displayedPartenaires = this.partenaires;
+        } else {
+          this.displayedPartenaires = [
+            ...this.partenaires.slice(-2),
+            ...this.partenaires,
+            ...this.partenaires.slice(0, 2)
+          ];
+          this.currentPartnerIndex = 2;
+          this.startPartnerCarousel();
+        }
       },
       error: (error) => {
         console.error('Erreur lors du chargement des partenaires:', error);
@@ -379,8 +385,37 @@ export class HomeComponent implements OnInit, OnDestroy {
           { id: 2, name: 'Ministère de l\'Education', logo: '/assets/ministry.jpg', link: '#' },
           { id: 3, name: 'Coca-Cola', logo: '/assets/cocacola.jpg', link: '#' }
         ];
+        this.displayedPartenaires = [
+          ...this.partenaires.slice(-2),
+          ...this.partenaires,
+          ...this.partenaires.slice(0, 2)
+        ];
+        this.currentPartnerIndex = 2;
+        this.startPartnerCarousel();
       }
     });
+  }
+
+  startPartnerCarousel() {
+    this.partnerInterval = setInterval(() => {
+      this.nextPartner();
+    }, 4000);
+  }
+
+  nextPartner() {
+    if (this.currentPartnerIndex === this.partenaires.length + 1) {
+      this.noTransition = true;
+      this.currentPartnerIndex = 1;
+      setTimeout(() => {
+        this.noTransition = false;
+      }, 0);
+    } else {
+      this.currentPartnerIndex++;
+    }
+  }
+
+  getActiveDot(): number {
+    return (this.currentPartnerIndex - 1) % this.partenaires.length;
   }
 
   loadCountriesAndSectors(): void {
@@ -405,6 +440,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   rechercher(): void {
     this.isSearching = true;
+    this.isSearchActive = true;
     this.error = null;
 
     const searchParams: any = {
@@ -441,8 +477,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Erreur lors de la recherche:', error);
-        this.error = this.currentLang === 'fr' 
-          ? 'Une erreur est survenue lors de la recherche. Veuillez réessayer.' 
+        this.error = this.currentLang === 'fr'
+          ? 'Une erreur est survenue lors de la recherche. Veuillez réessayer.'
           : 'An error occurred during the search. Please try again.';
         this.isSearching = false;
       }
@@ -453,6 +489,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.searchKeyword = '';
     this.selectedCountryId = undefined;
     this.selectedSectorId = undefined;
+    this.isSearchActive = false;
     this.loadMembres();
   }
 
@@ -495,28 +532,47 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   loadAnnonces(): void {
-    this.homeService.getAnnonces({ page: 0, size: 3 }).subscribe({
+    const params: any = {
+      page: 0,
+      size: 3
+    };
+    if (this.isSearchActive) {
+      if (this.searchKeyword && this.searchKeyword.trim()) {
+        params.name = this.searchKeyword.trim();
+      }
+      if (this.selectedSectorId) {
+        const selectedSector = this.sectors.find(s => s.id === this.selectedSectorId);
+        if (selectedSector) {
+          params.sector = this.currentLang === 'fr' ? selectedSector.nameFr : selectedSector.nameEn;
+        }
+      }
+      if (this.selectedCountryId) {
+        params.countryId = this.selectedCountryId;
+      }
+    }
+    this.homeService.getAnnonces(params).subscribe({
       next: (response) => {
         this.annonces = response.content;
       },
       error: (error) => {
         console.error('Erreur lors du chargement des annonces:', error);
+        this.annonces = [];
       }
     });
   }
 
   loadMembres(): void {
-    this.homeService.getMembres(this.countryAmchamId, { 
-      page: 0, 
-      size: 6 
+    this.homeService.getMembres({
+      page: 0,
+      size: 6
     }).subscribe({
       next: (response) => {
         this.membres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
-        console.log('Membres après recherche:', this.membres);
         const uniqueCountries = [...new Set(response.content.map(membre => membre.country))];
         this.totalCountries = uniqueCountries.length;
-        
+
         this.isLoading = false;
+        this.isSearchActive = false;
       },
       error: (error) => {
         console.error('Erreur lors du chargement des membres:', error);
@@ -612,12 +668,18 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(this.currentLang === 'fr' ? 'fr-FR' : 'en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    const [day, month, year] = dateString.split('-');
+    const isoDate = `${year}-${month}-${day}`;
+    const date = new Date(isoDate);
+
+    return date.toLocaleDateString(
+      this.currentLang === 'fr' ? 'fr-FR' : 'en-US',
+      {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }
+    );
   }
 
   getCategoryName(annonce: AnnonceResponse): string {
@@ -635,7 +697,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   startSlideShow(): void {
     this.slideInterval = setInterval(() => {
       this.nextSlide();
-    }, 5000); // 5 secondes pour mieux voir les publicités
+    }, 5000);
   }
 
   nextSlide(): void {

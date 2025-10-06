@@ -5,7 +5,28 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HeaderComponent } from "../header/header.component";
 import { LanguageService } from '../../../services/language.service';
 import { CompanyService, Company, CompanySchedule, Ratings } from '../../../services/company.service';
+import { HomeService, Company as HomeCompany } from '../../../services/home.service';
 import { Subscription, forkJoin } from 'rxjs';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+
+interface MembreDisplay {
+  id: number;
+  name: string;
+  categoryFr: string;
+  categoryEn: string;
+  locationFr: string;
+  locationEn: string;
+  phone: string;
+  website: string;
+  descriptionFr: string;
+  descriptionEn: string;
+  logo: string;
+  pictures: string[];
+  address?: string;
+  email?: string;
+  country?: string;
+  countryAmcham?: string;
+}
 
 @Component({
   selector: 'app-details-membre',
@@ -17,14 +38,41 @@ import { Subscription, forkJoin } from 'rxjs';
 export class DetailsMembreComponent implements OnInit, OnDestroy {
   private langSubscription!: Subscription;
   currentLang = 'fr';
-
+  displayedRatings: Ratings[] = [];
+  currentRatingIndex: number = 0;
+  noTransition: boolean = false;
+  private ratingInterval?: any;
   membreId: number = 0;
   membre: Company | null = null;
   horaires: CompanySchedule[] = [];
   ratings: Ratings[] = [];
+  membresSimilaires: MembreDisplay[] = [];
   isLoading = true;
+  mapUrl: SafeResourceUrl | null = null;
 
-  // Textes dynamiques
+  certificationsSimules = [
+    'ISO 9001:2015',
+    'SOC 2 Type II',
+    'AWS Partner',
+    'Microsoft Gold Partner'
+  ];
+  
+  servicesSimulesFr = [
+    'Développement d\'applications web et mobiles',
+    'Solutions cloud et infrastructure',
+    'Intelligence artificielle et machine learning',
+    'Consultation technologique',
+    'Support et maintenance'
+  ];
+  
+  servicesSimulesEn = [
+    'Web and mobile application development',
+    'Cloud solutions and infrastructure',
+    'Artificial intelligence and machine learning',
+    'Technology consulting',
+    'Support and maintenance'
+  ];
+
   get texts() {
     return this.currentLang === 'fr' ? {
       giveReview: 'Donner un avis',
@@ -106,109 +154,27 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
       reviewsPlural: 'reviews'
     };
   }
-  avisSimules = [
-    {
-      id: 1,
-      nom: 'Emma Li',
-      note: 5,
-      commentaireFr: 'Excellent service client et solutions très innovantes. L\'équipe est toujours disponible pour aider et les résultats sont impressionnants.',
-      commentaireEn: 'Excellent customer service and very innovative solutions. The team is always available to help and the results are impressive.',
-      avatar: '/assets/avatar1.jpg'
-    },
-    {
-      id: 2,
-      nom: 'Maximilien Mbaye',
-      note: 5,
-      commentaireFr: 'Très satisfait de la qualité des services. J\'ai pu avoir un retour de contact sous 24h et l\'équipe connaît bien ses sujets.',
-      commentaireEn: 'Very satisfied with the quality of services. I got a response within 24 hours and the team knows their subjects well.',
-      avatar: '/assets/avatar2.jpg'
-    },
-    {
-      id: 3,
-      nom: 'Aicha Diop',
-      note: 5,
-      commentaireFr: 'Partenaire de confiance depuis plus de 3 ans. Leur expertise dans le domaine technologique est impressionnante.',
-      commentaireEn: 'Trusted partner for over 3 years. Their expertise in the technology field is impressive.',
-      avatar: '/assets/avatar3.jpg'
-    }
-  ];
-
-  // Données simulées pour les sections non disponibles dans l'API
-  membresSimilaires = [
-    {
-      id: 7,
-      name: 'Global Tech Solutions',
-      categoryFr: 'Technologie',
-      categoryEn: 'Technology',
-      locationFr: 'Boston, États-Unis',
-      locationEn: 'Boston, USA',
-      phone: '+1 555-123-4567',
-      website: 'www.example.us'
-    },
-    {
-      id: 8,
-      name: 'Finrex Capital',
-      categoryFr: 'Finance',
-      categoryEn: 'Finance',
-      locationFr: 'Paris, France',
-      locationEn: 'Paris, France',
-      phone: '+33 1 34 56 78 90',
-      website: 'www.example.fr'
-    },
-    {
-      id: 9,
-      name: 'Acme Technologies',
-      categoryFr: 'Technologie',
-      categoryEn: 'Technology',
-      locationFr: 'États-Unis',
-      locationEn: 'United States',
-      phone: '+1 146-555-7890',
-      website: 'www.example.us'
-    }
-  ];
-
-  certificationsSimules = [
-    'ISO 9001:2015',
-    'SOC 2 Type II',
-    'AWS Partner',
-    'Microsoft Gold Partner'
-  ];
-
-  servicesSimulesFr = [
-    'Développement d\'applications web et mobiles',
-    'Solutions cloud et infrastructure',
-    'Intelligence artificielle et machine learning',
-    'Consultation technologique',
-    'Support et maintenance'
-  ];
-
-  servicesSimulesEn = [
-    'Web and mobile application development',
-    'Cloud solutions and infrastructure',
-    'Artificial intelligence and machine learning',
-    'Technology consulting',
-    'Support and maintenance'
-  ];
 
   constructor(
-    public route: ActivatedRoute, 
+    public route: ActivatedRoute,
     public router: Router,
     private languageService: LanguageService,
-    private companyService: CompanyService
+    private companyService: CompanyService,
+    private homeService: HomeService,
+    private sanitizer: DomSanitizer
   ) { }
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.membreId = +params['id'];
       this.loadMembreDetails();
+      this.loadMembresSimilaires();
     });
 
-    // S'abonner aux changements de langue
     this.langSubscription = this.languageService.currentLang$.subscribe(lang => {
       this.currentLang = lang;
     });
-    
-    // Initialiser la langue
+
     this.currentLang = this.languageService.getCurrentLanguage();
   }
 
@@ -216,29 +182,48 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
     if (this.langSubscription) {
       this.langSubscription.unsubscribe();
     }
+    if (this.ratingInterval) {
+      clearInterval(this.ratingInterval);
+    }
   }
 
   loadMembreDetails() {
     this.isLoading = true;
-    
-    // Charger d'abord les données principales
     forkJoin({
       company: this.companyService.getCompanyById(this.membreId),
       schedules: this.companyService.getHoraire(this.membreId)
     }).subscribe({
       next: ({ company, schedules }) => {
         this.membre = company;
+        console.log('Données du membre:', this.membre);
         this.horaires = schedules;
         this.isLoading = false;
-        
-        // Charger les ratings séparément (non bloquant)
+
+        // Initialiser la carte après avoir chargé les données du membre
+        this.initializeMap();
+
         this.companyService.getRatings(this.membreId).subscribe({
           next: (ratings) => {
             this.ratings = ratings;
+            if (this.ratings.length < 3) {
+              while (this.ratings.length < 3) {
+                this.ratings = [...this.ratings, ...this.ratings.slice(0, 3 - this.ratings.length)];
+              }
+              this.displayedRatings = this.ratings;
+            } else {
+              this.displayedRatings = [
+                ...this.ratings.slice(-2),
+                ...this.ratings,
+                ...this.ratings.slice(0, 2)
+              ];
+              this.currentRatingIndex = 2;
+              this.startRatingCarousel();
+            }
           },
           error: (error) => {
             console.warn('Aucun rating disponible pour cette entreprise', error);
             this.ratings = [];
+            this.displayedRatings = [];
           }
         });
       },
@@ -250,25 +235,103 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Calculer la moyenne des notes
+  // Méthode pour initialiser la carte Google Maps
+  private initializeMap(): void {
+    if (this.membre?.lat && this.membre?.lon) {
+      const url = `https://www.google.com/maps?q=${this.membre.lat},${this.membre.lon}&hl=${this.currentLang}&z=15&output=embed`;
+      this.mapUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+      console.log('Carte initialisée avec les coordonnées:', this.membre.lat, this.membre.lon);
+    } else {
+      console.warn('Coordonnées GPS non disponibles pour ce membre');
+      this.mapUrl = null;
+    }
+  }
+
+  loadMembresSimilaires() {
+    const params: any = {
+      page: 0,
+      size: 3,
+      sector: this.membre?.sector,
+      country: this.membre?.country
+    };
+    this.homeService.getMembres(params).subscribe({
+      next: (response) => {
+        this.membresSimilaires = response.content
+          .filter(company => company.id !== this.membreId)
+          .slice(0, 3)
+          .map(company => this.mapCompanyToMembreDisplay(company));
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des membres similaires:', error);
+        this.membresSimilaires = [];
+      }
+    });
+  }
+
+  private mapCompanyToMembreDisplay(company: HomeCompany): MembreDisplay {
+    return {
+      id: company.id,
+      name: company.name,
+      categoryFr: company.sector,
+      categoryEn: company.sector,
+      locationFr: company.country,
+      locationEn: company.country,
+      phone: company.telephone || 'N/A',
+      website: company.webLink || 'N/A',
+      descriptionFr: company.description || '',
+      descriptionEn: company.description || '',
+      logo: company.logo,
+      pictures: company.pictures || [],
+      address: company.address,
+      email: company.email,
+      country: company.country,
+      countryAmcham: company.countryAmcham
+    };
+  }
+
+  getSafeVideoUrl(): SafeResourceUrl | null {
+    if (!this.membre?.videoLink) return null;
+    // Convert YouTube watch URL to embed URL
+    const videoId = this.membre.videoLink.split('v=')[1]?.split('&')[0];
+    const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}` : this.membre.videoLink;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
+  }
+
+  startRatingCarousel() {
+    this.ratingInterval = setInterval(() => {
+      this.nextRating();
+    }, 4000);
+  }
+
+  nextRating() {
+    if (this.currentRatingIndex === this.ratings.length + 1) {
+      this.noTransition = true;
+      this.currentRatingIndex = 1;
+      setTimeout(() => {
+        this.noTransition = false;
+      }, 0);
+    } else {
+      this.currentRatingIndex++;
+    }
+  }
+
+  getActiveDot(): number {
+    return (this.currentRatingIndex - 1) % this.ratings.length;
+  }
+
   getAverageRating(): number {
     if (!this.ratings || this.ratings.length === 0) {
       return 0;
     }
-    
     const sum = this.ratings.reduce((acc, rating) => acc + rating.score, 0);
     const average = sum / this.ratings.length;
-    
-    // Arrondir à 1 décimale
     return Math.round(average * 10) / 10;
   }
 
-  // Obtenir le nombre total d'avis
   getTotalReviews(): number {
     return this.ratings ? this.ratings.length : 0;
   }
 
-  // Obtenir le texte d'avis (singulier/pluriel)
   getReviewText(): string {
     const count = this.getTotalReviews();
     if (this.currentLang === 'fr') {
@@ -278,18 +341,8 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Méthode utilitaire pour obtenir la propriété traduite
-  getTranslatedProperty(property: string): string {
-    if (!this.membre) return '';
-    
-    // Pour les propriétés qui n'ont pas de traduction, retourner directement la valeur
-    return this.membre[property as keyof Company] as string || '';
-  }
-
-  // Méthode pour obtenir les horaires formatés
   getFormattedHoraires(): any {
     const horairesObj: any = {};
-    
     this.horaires.forEach(schedule => {
       const dayKey = this.getTranslatedDay(schedule.dayOfWeek);
       if (schedule.closed) {
@@ -300,11 +353,9 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
         horairesObj[dayKey] = this.texts.closed;
       }
     });
-    
     return horairesObj;
   }
 
-  // Méthode pour traduire les jours de la semaine
   getTranslatedDay(day: string): string {
     const daysMap: { [key: string]: { fr: string, en: string } } = {
       'MONDAY': { fr: 'Lundi', en: 'Monday' },
@@ -315,42 +366,38 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
       'SATURDAY': { fr: 'Samedi', en: 'Saturday' },
       'SUNDAY': { fr: 'Dimanche', en: 'Sunday' }
     };
-    
-    return this.currentLang === 'fr' 
-      ? daysMap[day]?.fr || day 
+    return this.currentLang === 'fr'
+      ? daysMap[day]?.fr || day
       : daysMap[day]?.en || day;
   }
 
-  // Méthode pour obtenir les jours de la semaine traduits
   getTranslatedDays(): string[] {
-    return this.currentLang === 'fr' ? 
+    return this.currentLang === 'fr' ?
       ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] :
       ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   }
 
-  // Méthode pour obtenir les services (simulés pour l'instant)
   getServices(): string[] {
     return this.currentLang === 'fr' ? this.servicesSimulesFr : this.servicesSimulesEn;
   }
 
-  // Méthode pour obtenir l'adresse complète
   getCompleteAddress(): string {
     if (!this.membre) return '';
-    
     const addressParts = [this.membre.address, this.membre.city, this.membre.country]
       .filter(part => part && part.trim() !== '');
-    
     return addressParts.join(', ');
   }
 
   laisserAvis() {
     console.log('Laisser un avis pour:', this.membre?.name);
-    // Implémenter la logique pour laisser un avis
   }
 
-  contacter() {
-    console.log('Contacter:', this.membre?.name);
-    // Implémenter la logique de contact
+  contactMembre(membre: MembreDisplay): void {
+    if (membre.email) {
+      window.location.href = `mailto:${membre.email}`;
+    } else {
+      console.log('Contacter:', membre.name);
+    }
   }
 
   voirFiche(membreId: number) {
@@ -367,7 +414,6 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
 
   openMap() {
     if (!this.membre) return;
-    
     const encodedAddress = encodeURIComponent(this.getCompleteAddress());
     window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank');
   }
@@ -384,7 +430,6 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
 
   visitWebsite() {
     if (!this.membre) return;
-    
     let website = this.membre.webLink;
     if (!website.startsWith('http://') && !website.startsWith('https://')) {
       website = 'https://' + website;
@@ -392,8 +437,17 @@ export class DetailsMembreComponent implements OnInit, OnDestroy {
     window.open(website, '_blank');
   }
 
-  // Méthode pour obtenir l'initiale du nom de l'entreprise
   getInitial(name: string): string {
     return name ? name.charAt(0).toUpperCase() : '';
+  }
+
+  getMemberImageUrl(picture: string): string {
+    return this.homeService.getCompanyImageUrl(picture);
+  }
+
+  getTranslatedProperty(membre: MembreDisplay, property: string): string {
+    const langSuffix = this.currentLang === 'fr' ? 'Fr' : 'En';
+    const key = `${property}${langSuffix}` as keyof MembreDisplay;
+    return (membre[key] as string) || '';
   }
 }

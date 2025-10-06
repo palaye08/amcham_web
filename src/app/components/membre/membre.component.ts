@@ -178,7 +178,7 @@ export class MembreComponent implements OnInit, OnDestroy {
       size: this.pageSize
     };
 
-    this.homeService.getMembres(this.countryAmchamId, params).subscribe({
+    this.homeService.getMembres(params).subscribe({
       next: (response) => {
         const newMembres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
         
@@ -259,7 +259,7 @@ export class MembreComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.homeService.getMembres(this.countryAmchamId, searchParams).subscribe({
+    this.homeService.getMembres(searchParams).subscribe({
       next: (response) => {
         this.allMembres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
         this.filteredMembres = [...this.allMembres];
