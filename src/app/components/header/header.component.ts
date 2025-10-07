@@ -4,6 +4,7 @@ import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { LanguageService } from '../../../services/language.service';
 import { filter } from 'rxjs/operators';
 
+// ✅ Interface pour les langues
 interface Language {
   code: string;
   name: string;
@@ -19,7 +20,8 @@ interface Language {
 })
 export class HeaderComponent implements OnInit {
   showLanguagePopup = false;
-  activeSection = 'accueil'; // Section active par défaut
+  activeSection = 'accueil';
+  isMenuOpen = false; // ✅ Pour le menu mobile
 
   languages: Language[] = [
     { code: 'FR', name: 'Français', flag: 'https://flagcdn.com/w20/fr.png' },
@@ -32,31 +34,31 @@ export class HeaderComponent implements OnInit {
     private router: Router,
     private languageService: LanguageService
   ) {
-    // Écouter les changements de route
-    this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
-    ).subscribe(() => {
-      this.updateActiveSection();
-    });
+    // Écoute des changements de route
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.updateActiveSection();
+      });
   }
 
   ngOnInit(): void {
     const currentLang = this.languageService.getCurrentLanguage();
-    this.currentLanguage = this.languages.find(lang => 
-      lang.code.toLowerCase() === currentLang.toLowerCase()
-    ) || this.languages[0];
+    this.currentLanguage =
+      this.languages.find(
+        (lang) => lang.code.toLowerCase() === currentLang.toLowerCase()
+      ) || this.languages[0];
 
-    // Initialiser la section active
+    // Initialisation de la section active
     this.updateActiveSection();
 
-    // Écouter le scroll pour détecter la section visible
+    // Écoute du scroll
     this.setupScrollListener();
   }
 
-  // Mettre à jour la section active basée sur l'URL ou le scroll
+  // ✅ Mettre à jour la section active
   updateActiveSection(): void {
     const url = this.router.url;
-    
     if (url.includes('#annonces')) {
       this.activeSection = 'annonces';
     } else if (url.includes('#annuaires')) {
@@ -66,16 +68,15 @@ export class HeaderComponent implements OnInit {
     }
   }
 
-  // Configurer l'écouteur de scroll pour détecter la section visible
+  // ✅ Détecter la section visible au scroll
   setupScrollListener(): void {
     window.addEventListener('scroll', () => {
       const sections = ['accueil', 'annonces', 'annuaires'];
-      
+
       for (const sectionId of sections) {
         const element = document.getElementById(sectionId);
         if (element) {
           const rect = element.getBoundingClientRect();
-          // Si la section est visible dans le viewport (avec un offset)
           if (rect.top <= 150 && rect.bottom >= 150) {
             this.activeSection = sectionId;
             break;
@@ -85,12 +86,12 @@ export class HeaderComponent implements OnInit {
     });
   }
 
-  // Vérifier si une section est active
+  // ✅ Vérifie la section active
   isActive(section: string): boolean {
     return this.activeSection === section;
   }
 
-  // Navigation methods
+  // ✅ Navigation
   navigateToHome() {
     this.activeSection = 'accueil';
     this.router.navigate(['/']);
@@ -119,14 +120,14 @@ export class HeaderComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  // Language methods
+  // ✅ Langue
   toggleLanguagePopup() {
     this.showLanguagePopup = !this.showLanguagePopup;
   }
 
   selectLanguage(languageCode: string) {
-    const selectedLanguage = this.languages.find(lang => 
-      lang.code.toLowerCase() === languageCode.toLowerCase()
+    const selectedLanguage = this.languages.find(
+      (lang) => lang.code.toLowerCase() === languageCode.toLowerCase()
     );
 
     if (selectedLanguage) {
@@ -145,13 +146,13 @@ export class HeaderComponent implements OnInit {
     }
   }
 
-  // Smooth scroll to section
+  // ✅ Scroll doux vers section
   navigateToSection(sectionId: string) {
     this.router.navigate(['/'], { fragment: sectionId }).then(() => {
       setTimeout(() => {
         const element = document.getElementById(sectionId);
         if (element) {
-          const headerOffset = 80; // Hauteur du header fixe
+          const headerOffset = 80;
           const elementPosition = element.getBoundingClientRect().top;
           const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 

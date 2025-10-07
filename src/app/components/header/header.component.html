@@ -1,43 +1,43 @@
-<!-- Barre de langue (non fixe - défile normalement) -->
-<div class="bg-[#132742] h-12">
-  <div class="w-[86%] mx-auto flex justify-between items-center h-full">
-    <div class="text-white text-sm">
-      Plateforme AmCham - Réseau des Chambres de Commerce Américaines
+<!-- Barre de langue -->
+<div class="bg-[#132742] h-10 sm:h-12">
+  <div class="w-[90%] mx-auto flex justify-between items-center h-full text-xs sm:text-sm">
+    <div class="text-white truncate">
+      <span class="hidden sm:inline">Plateforme AmCham - Réseau des Chambres de Commerce Américaines</span>
+      <span class="sm:hidden">Plateforme AmCham</span>
     </div>
+
     <div class="relative language-selector border border-white/20 py-1 px-2 rounded-lg">
       <button (click)="toggleLanguagePopup()"
-        class="text-white text-sm flex items-center space-x-2 hover:opacity-80 transition-opacity">
+        class="text-white text-xs sm:text-sm flex items-center space-x-1 sm:space-x-2 hover:opacity-80 transition-opacity">
         <img [src]="currentLanguage.flag" alt="" class="w-4 h-4 rounded-sm">
-        <span>{{ currentLanguage.code }}</span>
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <span class="hidden sm:inline">{{ currentLanguage.code }}</span>
+        <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
-      <!-- Popup de sélection de langue -->
+      <!-- Popup langue -->
       <div *ngIf="showLanguagePopup"
-        class="absolute top-full right-0 mt-1 w-64 bg-gradient-to-b from-[#4a5a7a] to-[#2a3a5a] rounded-lg shadow-lg overflow-hidden z-50">
-        <div class="p-4">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-white font-medium">Changer la langue</h3>
+        class="absolute top-full right-0 mt-1 w-48 sm:w-64 bg-gradient-to-b from-[#4a5a7a] to-[#2a3a5a] rounded-lg shadow-lg overflow-hidden z-50">
+        <div class="p-3 sm:p-4">
+          <div class="flex justify-between items-center mb-3 sm:mb-4">
+            <h3 class="text-white font-medium text-sm sm:text-base">Langue</h3>
             <button (click)="toggleLanguagePopup()" class="text-gray-300 hover:text-white">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
-          <!-- Option Français -->
           <div (click)="selectLanguage('fr')"
-            class="flex items-center justify-between p-3 rounded-lg mb-2 cursor-pointer hover:bg-black/20 transition-colors"
+            class="flex items-center justify-between p-2 sm:p-3 rounded-lg mb-2 cursor-pointer hover:bg-black/20 transition-colors"
             [class.border-2]="currentLanguage.code === 'FR'" [class.border-red-500]="currentLanguage.code === 'FR'">
             <div class="flex items-center space-x-3">
               <img src="https://flagcdn.com/w20/fr.png" alt="Français" class="w-5 h-5 rounded-sm">
-              <span class="text-white">Français</span>
+              <span class="text-white text-sm">Français</span>
             </div>
-            <div *ngIf="currentLanguage.code === 'FR'"
-              class="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-              <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <div *ngIf="currentLanguage.code === 'FR'" class="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+              <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd"
                   d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                   clip-rule="evenodd" />
@@ -45,16 +45,14 @@
             </div>
           </div>
 
-          <!-- Option Anglais -->
           <div (click)="selectLanguage('en')"
-            class="flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-black/20 transition-colors"
+            class="flex items-center justify-between p-2 sm:p-3 rounded-lg cursor-pointer hover:bg-black/20 transition-colors"
             [class.border-2]="currentLanguage.code === 'EN'" [class.border-red-500]="currentLanguage.code === 'EN'">
             <div class="flex items-center space-x-3">
               <img src="https://flagcdn.com/w20/gb.png" alt="English" class="w-5 h-5 rounded-sm">
-              <span class="text-white">Anglais</span>
+              <span class="text-white text-sm">Anglais</span>
             </div>
-            <div *ngIf="currentLanguage.code === 'EN'" class="w-5 h-5 border-2 border-gray-400 rounded-full">
-            </div>
+            <div *ngIf="currentLanguage.code === 'EN'" class="w-4 h-4 border-2 border-gray-400 rounded-full"></div>
           </div>
         </div>
       </div>
@@ -62,22 +60,19 @@
   </div>
 </div>
 
-<!-- Header fixe qui reste en haut lors du scroll -->
+<!-- Header -->
 <header class="sticky top-0 bg-white shadow-sm border-b z-40">
   <div class="w-[90%] mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-end h-20 overflow-hidden">
+    <div class="flex justify-between items-center h-16 sm:h-20">
       <!-- Logo -->
       <div class="flex-shrink-0 cursor-pointer" (click)="navigateToHome()">
-        <div class="flex items-center space-x-2">
-          <img class="h-24" src="../assets/logoAmcham.png" alt="">
-        </div>
+        <img class="h-10 sm:h-16" src="../assets/logoAmcham.png" alt="Logo AmCham">
       </div>
 
-      <!-- Navigation Menu -->
-      <nav class="hidden md:flex space-x-8 h-full items-end">
-        <!-- Bouton Accueil -->
+      <!-- Menu desktop -->
+      <nav class="hidden md:flex space-x-6 lg:space-x-8 h-full items-end">
         <a (click)="navigateToAccueil()"
-          class="px-3 py-2 text-xl font-bold h-full flex justify-center items-center cursor-pointer border-b-4 transition-all"
+          class="px-2 lg:px-3 py-1 text-base lg:text-xl font-bold border-b-4 transition-all"
           [ngClass]="{
             'text-red-600 border-red-600': isActive('accueil'),
             'text-gray-700 hover:text-red-600 border-transparent hover:border-red-300': !isActive('accueil')
@@ -85,9 +80,8 @@
           Accueil
         </a>
 
-        <!-- Bouton Annonces -->
         <a (click)="navigateToAnnonces()"
-          class="px-3 py-2 text-xl font-bold h-full flex justify-center items-center cursor-pointer border-b-4 transition-all"
+          class="px-2 lg:px-3 py-1 text-base lg:text-xl font-bold border-b-4 transition-all"
           [ngClass]="{
             'text-red-600 border-red-600': isActive('annonces'),
             'text-gray-700 hover:text-red-600 border-transparent hover:border-red-300': !isActive('annonces')
@@ -95,9 +89,8 @@
           Annonces
         </a>
 
-        <!-- Bouton Annuaires -->
         <a (click)="navigateToAnnuaires()"
-          class="px-3 py-2 text-xl font-bold h-full flex justify-center items-center cursor-pointer border-b-4 transition-all"
+          class="px-2 lg:px-3 py-1 text-base lg:text-xl font-bold border-b-4 transition-all"
           [ngClass]="{
             'text-red-600 border-red-600': isActive('annuaires'),
             'text-gray-700 hover:text-red-600 border-transparent hover:border-red-300': !isActive('annuaires')
@@ -106,8 +99,8 @@
         </a>
       </nav>
 
-      <!-- Espace Membre Button -->
-      <div class="flex items-center h-full">
+      <!-- Bouton membre -->
+       <div class="hidden sm:flex items-center">
         <button (click)="navigateToLogin()"
           class="bg-red-600 hover:bg-red-700 text-white p-4 rounded-[30px] text-md font-semibold flex items-center space-x-2 transition-colors">
           <svg width="19" height="20" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -117,14 +110,34 @@
         </button>
       </div>
 
-      <!-- Mobile menu button -->
-      <div class="md:hidden">
-        <button type="button" class="text-gray-700 hover:text-red-600 focus:outline-none focus:text-red-600">
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      <!-- Bouton menu mobile -->
+      <div class="md:hidden flex items-center">
+        <button (click)="isMenuOpen = !isMenuOpen"
+          class="text-gray-700 hover:text-red-600 focus:outline-none focus:text-red-600">
+          <svg *ngIf="!isMenuOpen" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <svg *ngIf="isMenuOpen" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
+    </div>
+
+    <!-- Menu mobile -->
+    <div *ngIf="isMenuOpen" class="md:hidden bg-gray-50 border-t animate-fadeIn">
+      <nav class="flex flex-col space-y-2 py-3">
+        <a (click)="navigateToAccueil(); isMenuOpen=false"
+          class="px-4 py-2 text-gray-700 hover:text-red-600 font-semibold">Accueil</a>
+        <a (click)="navigateToAnnonces(); isMenuOpen=false"
+          class="px-4 py-2 text-gray-700 hover:text-red-600 font-semibold">Annonces</a>
+        <a (click)="navigateToAnnuaires(); isMenuOpen=false"
+          class="px-4 py-2 text-gray-700 hover:text-red-600 font-semibold">Annuaires</a>
+        <a (click)="navigateToLogin(); isMenuOpen=false"
+          class="px-4 py-2 text-red-600 font-semibold">Espace membre</a>
+      </nav>
     </div>
   </div>
 </header>

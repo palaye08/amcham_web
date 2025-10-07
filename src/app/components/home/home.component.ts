@@ -442,46 +442,53 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isSearching = true;
     this.isSearchActive = true;
     this.error = null;
-
+ 
     const searchParams: any = {
       page: 0,
-      size: 6
+      size: 6,
     };
-
+ 
     if (this.searchKeyword && this.searchKeyword.trim()) {
-      searchParams.name = this.searchKeyword.trim();
+      searchParams.keyword = this.searchKeyword.trim();
     }
-
+ 
     if (this.selectedSectorId) {
-      const selectedSector = this.sectors.find(s => s.id === this.selectedSectorId);
-      if (selectedSector) {
-        searchParams.sector = this.currentLang === 'fr' ? selectedSector.nameFr : selectedSector.nameEn;
-      }
+      searchParams.sectorId = this.selectedSectorId;
     }
-
+ 
+    if (this.selectedCountryId) {
+      searchParams.countryId = this.selectedCountryId;
+    }
+ 
     this.homeService.getMembres(searchParams).subscribe({
       next: (response) => {
-        this.membres = response.content.map(company => this.mapCompanyToMembreDisplay(company));
+        this.membres = response.content.map((company) =>
+          this.mapCompanyToMembreDisplay(company)
+        );
         console.log('Membres après recherche:', this.membres);
         this.totalCompanies = response.totalElements;
         this.isSearching = false;
-
+ 
         if (this.membres.length > 0) {
           setTimeout(() => {
             const membresSection = document.querySelector('.membres-section');
             if (membresSection) {
-              membresSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              membresSection.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
             }
           }, 100);
         }
       },
       error: (error) => {
         console.error('Erreur lors de la recherche:', error);
-        this.error = this.currentLang === 'fr'
-          ? 'Une erreur est survenue lors de la recherche. Veuillez réessayer.'
-          : 'An error occurred during the search. Please try again.';
+        this.error =
+          this.currentLang === 'fr'
+            ? 'Une erreur est survenue lors de la recherche. Veuillez réessayer.'
+            : 'An error occurred during the search. Please try again.';
         this.isSearching = false;
-      }
+      },
     });
   }
 
