@@ -50,6 +50,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Données des publicités dynamiques
   ads: AdResponse[] = [];
   isAdsLoading = false;
+  isMobile: boolean = false;
+
 
   displayedPartenaires: Partenaire[] = [];
   currentPartnerIndex: number = 0;
@@ -273,6 +275,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
 
     this.currentLang = this.languageService.getCurrentLanguage();
+    // 🔹 Détection mobile
+    this.isMobile = window.innerWidth < 640; // breakpoint sm de Tailwind
+    window.addEventListener('resize', () => {
+      this.isMobile = window.innerWidth < 640;
+    });
+
 
     this.loadAds();
     this.loadHomeData();
@@ -290,6 +298,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.partnerInterval) {
       clearInterval(this.partnerInterval);
     }
+    window.removeEventListener('resize', () => {
+    this.isMobile = window.innerWidth < 640;
+  });
   }
 
   loadAds(): void {
@@ -353,6 +364,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       window.open(currentAd.link, '_blank');
     }
   }
+
 
   getLogoUrl(logoPath: string): string {
     return this.partenaireService.getLogoUrl(logoPath);
@@ -442,24 +454,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isSearching = true;
     this.isSearchActive = true;
     this.error = null;
- 
+
     const searchParams: any = {
       page: 0,
       size: 6,
     };
- 
+
     if (this.searchKeyword && this.searchKeyword.trim()) {
       searchParams.keyword = this.searchKeyword.trim();
     }
- 
+
     if (this.selectedSectorId) {
       searchParams.sectorId = this.selectedSectorId;
     }
- 
+
     if (this.selectedCountryId) {
       searchParams.countryId = this.selectedCountryId;
     }
- 
+
     this.homeService.getMembres(searchParams).subscribe({
       next: (response) => {
         this.membres = response.content.map((company) =>
@@ -468,7 +480,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         console.log('Membres après recherche:', this.membres);
         this.totalCompanies = response.totalElements;
         this.isSearching = false;
- 
+
         if (this.membres.length > 0) {
           setTimeout(() => {
             const membresSection = document.querySelector('.membres-section');

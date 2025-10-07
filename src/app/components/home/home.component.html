@@ -78,7 +78,6 @@
     </div>
   </section>
 
-
   <!-- Section Recherche -->
   <section class="relative bottom-24 z-10" style="background: linear-gradient(to bottom, 50%, #F5F6FA 50%);">
     <div class="bg-white rounded-2xl p-6 sm:p-10 border w-[95%] sm:w-[87%] mx-auto">
@@ -246,13 +245,13 @@
     <div class="w-[95%] sm:w-[90%] mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col sm:flex-row justify-between items-center mb-8 sm:mb-12">
         <h2 class="text-3xl sm:text-4xl font-bold text-[#1F2937]">{{ searchTexts.newsTitle }}</h2>
-        <button (click)="voirToutesActualites()"
+        <!-- <button (click)="voirToutesActualites()"
           class="mt-4 sm:mt-0 text-red-600 hover:text-red-700 font-medium flex items-center space-x-2">
           <span>{{ searchTexts.seeAllNews }}</span>
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
-        </button>
+        </button> -->
       </div>
       <div *ngIf="isLoading" class="text-center py-8">
         <div class="inline-flex items-center">
@@ -302,7 +301,9 @@
           <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{{ searchTexts.membersTitle }}</h2>
           <p class="text-gray-600 text-sm sm:text-base">{{ searchTexts.membersDesc }}</p>
         </div>
-        <div class=" hidden md:flex text-[#224185] bg-[#E5E7EB] px-4 py-2 sm:py-3 rounded-full font-medium text-sm sm:text-base">{{
+        <div
+          class=" hidden md:flex text-[#224185] bg-[#E5E7EB] px-4 py-2 sm:py-3 rounded-full font-medium text-sm sm:text-base">
+          {{
           membres.length }} {{ searchTexts.membersDisplayed }}</div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
@@ -378,99 +379,142 @@
   </section>
 
   <!-- Section Application -->
- <section class="pb-12 sm:pb-16 bg-[#F5F6FA]">
-  <div class="w-[95%] sm:w-[90%] mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="bg-white rounded-3xl shadow-2xl px-6 sm:px-12 relative overflow-hidden">
+  <section class="pb-12 sm:pb-16 bg-[#F5F6FA]">
+    <div class="w-[95%] sm:w-[90%] mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-white rounded-3xl shadow-2xl px-6 sm:px-12 relative overflow-hidden flex flex-col justify-end">
 
-      <!-- ✅ SVG décoratifs -->
-      <div class="hidden md:block absolute top-0 right-0 pointer-events-none">
-        <svg width="128" height="187" viewBox="0 0 128 187" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="127.5" cy="59.5" r="127.5" fill="#D11E2B" fill-opacity="0.05" />
-        </svg>
-      </div>
-      <div class="hidden md:block absolute bottom-0 left-0 pointer-events-none">
-        <svg width="146" height="87" viewBox="0 0 146 87" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="18.5" cy="127.5" r="127.5" fill="#285D90" fill-opacity="0.05" />
-        </svg>
-      </div>
-
-      <!-- ✅ Layout -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-12 items-center relative z-10">
-
-        <!-- Texte -->
-        <div class="py-8 sm:py-12 px-2 sm:px-0 order-1 lg:order-1">
-          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
-            {{ searchTexts.appTitle }}
-          </h2>
-          <p class="text-gray-600 mb-6 sm:mb-8 text-base sm:text-lg">
-            {{ searchTexts.appDesc }}
-          </p>
-          <ul class="space-y-3 sm:space-y-4 text-gray-600 mb-6 sm:mb-8">
-            <li class="flex items-center gap-2 text-base sm:text-lg">
-              <h1 class="font-bold">•</h1>{{ searchTexts.feature1 }}
-            </li>
-            <li class="flex items-center gap-2">
-              <h1 class="font-bold">•</h1>{{ searchTexts.feature2 }}
-            </li>
-            <li class="flex items-center gap-2">
-              <h1 class="font-bold">•</h1>{{ searchTexts.feature3 }}
-            </li>
-            <li class="flex items-center gap-2">
-              <h1 class="font-bold">•</h1>{{ searchTexts.feature4 }}
-            </li>
-          </ul>
-
-          <!-- ✅ Boutons -->
-          <div class="flex gap-2 md:gap-4">
-            <button
-              onclick="alert('Cette fonctionnalité n’est pas encore disponible.')"
-              class="bg-white border-2 border-black text-black px-4 sm:px-6 py-3 rounded-full flex items-center justify-center space-x-3 hover:bg-gray-50 transition-colors w-full sm:w-auto"
-            >
-              <svg class="w-6 h-6" width="16" height="21" viewBox="0 0 16 21" fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <!-- SVG path -->
-              </svg>
-              <div class="text-left">
-                <div class="text-xs sm:text-sm">{{ searchTexts.download }}</div>
-                <div class="text-sm sm:text-base font-semibold">{{ searchTexts.appStore }}</div>
-              </div>
-            </button>
-
-            <button
-              onclick="window.open('https://play.google.com/store/apps/details?id=com.innov.amcham_mobile&pli=1', '_blank')"
-              class="bg-white border-2 border-black text-black px-4 sm:px-6 py-3 rounded-full flex items-center justify-center space-x-3 hover:bg-gray-50 transition-colors w-full sm:w-auto"
-            >
-              <svg class="w-6 h-6" width="17" height="18" viewBox="0 0 17 18" fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <!-- SVG path -->
-              </svg>
-              <div class="text-left">
-                <div class="text-xs sm:text-sm">{{ searchTexts.download }}</div>
-                <div class="text-sm sm:text-base font-semibold">{{ searchTexts.googlePlay }}</div>
-              </div>
-            </button>
-          </div>
+        <!-- ✅ SVG décoratifs (affichés uniquement sur grand écran) -->
+        <div class="hidden lg:block absolute top-0 right-0 pointer-events-none">
+          <svg width="128" height="187" viewBox="0 0 128 187" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="127.5" cy="59.5" r="127.5" fill="#D11E2B" fill-opacity="0.05" />
+          </svg>
+        </div>
+        <div class="hidden lg:block absolute bottom-0 left-0 pointer-events-none">
+          <svg width="146" height="87" viewBox="0 0 146 87" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18.5" cy="127.5" r="127.5" fill="#285D90" fill-opacity="0.05" />
+          </svg>
         </div>
 
-        <!-- ✅ Image alignée bas + SVG derrière -->
-        <div class="flex justify-center items-end relative order-2 lg:order-2">
-          <div class="hidden md:block absolute bottom-0 left-1/2 transform -translate-x-1/2 pointer-events-none z-0">
-            <svg width="300" height="300" viewBox="0 0 333 333" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="166.5" cy="166.5" r="166.5" fill="#F8F9FD" />
-            </svg>
+        <!-- ✅ Layout principal -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-12 items-center relative z-10">
+
+          <!-- ✅ Colonne texte -->
+          <div class="xl:flex-1 py-8 sm:py-12 px-2 sm:px-0 order-1 lg:order-1">
+            <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
+              {{ searchTexts.appTitle }}
+            </h2>
+            <p class="text-gray-600 mb-6 sm:mb-8 text-base sm:text-lg">
+              {{ searchTexts.appDesc }}
+            </p>
+
+            <ul class="space-y-3 sm:space-y-4 text-gray-600 mb-6 sm:mb-8">
+              <li class="flex items-center gap-2 text-base sm:text-lg">
+                <h1 class="font-bold">•</h1>{{ searchTexts.feature1 }}
+              </li>
+              <li class="flex items-center gap-2">
+                <h1 class="font-bold">•</h1>{{ searchTexts.feature2 }}
+              </li>
+              <li class="flex items-center gap-2">
+                <h1 class="font-bold">•</h1>{{ searchTexts.feature3 }}
+              </li>
+              <li class="flex items-center gap-2">
+                <h1 class="font-bold">•</h1>{{ searchTexts.feature4 }}
+              </li>
+            </ul>
+
+            <!-- ✅ Boutons -->
+            <div class="flex flex-col md:flex-row gap-2 md:gap-4">
+              <button onclick="alert('Cette fonctionnalité n’est pas encore disponible.')"
+                class="bg-white border-2 border-black text-black px-4 sm:px-6 py-3 rounded-full flex items-center justify-center space-x-3 hover:bg-gray-50 transition-colors w-full sm:w-auto">
+                <svg width="16" height="21" viewBox="0 0 16 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M13.3637 11.1157C13.3413 8.69335 15.398 7.51487 15.492 7.46C14.3272 5.80426 12.5219 5.57803 11.8875 5.55999C10.3712 5.40441 8.9004 6.44461 8.128 6.44461C7.34018 6.44461 6.15075 5.57502 4.86881 5.60058C3.21918 5.62538 1.67592 6.55659 0.829517 8.00265C-0.917247 10.9511 0.385503 15.284 2.05904 17.6673C2.89619 18.8345 3.87441 20.1378 5.1548 20.0919C6.40744 20.0416 6.87536 19.3133 8.38701 19.3133C9.88478 19.3133 10.3242 20.0919 11.63 20.0626C12.9744 20.0416 13.8208 18.8901 14.6286 17.7124C15.5961 16.3746 15.9846 15.057 16 14.9894C15.9684 14.9789 13.3891 14.0191 13.3637 11.1157Z"
+                    fill="black" />
+                  <path
+                    d="M10.8969 3.99218C11.5707 3.1707 12.0316 2.05309 11.9037 0.918945C10.9285 0.961034 9.70903 1.57658 9.00678 2.38003C8.38547 3.08802 7.83045 4.24847 7.97383 5.33978C9.06922 5.41944 10.1939 4.80089 10.8969 3.99218Z"
+                    fill="black" />
+                </svg>
+
+                <div class="text-left">
+                  <div class="text-xs sm:text-sm">{{ searchTexts.download }}</div>
+                  <div class="text-sm sm:text-base font-semibold">{{ searchTexts.appStore }}</div>
+                </div>
+              </button>
+
+              <button
+                onclick="window.open('https://play.google.com/store/apps/details?id=com.innov.amcham_mobile&pli=1', '_blank')"
+                class="bg-white border-2 border-black text-black px-4 sm:px-6 py-3 rounded-full flex items-center justify-center space-x-3 hover:bg-gray-50 transition-colors w-full sm:w-auto">
+                <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M1.25076 0.551039C1.04723 0.758773 0.929443 1.08219 0.929443 1.50104V16.4409C0.929443 16.8598 1.04723 17.1832 1.25076 17.3909L1.301 17.4365L9.88746 9.06809V8.87049L1.301 0.502063L1.25076 0.551039Z"
+                    fill="url(#paint0_linear_1115_367)" />
+                  <path
+                    d="M12.7464 11.8589L9.88745 9.068V8.8704L12.7499 6.07952L12.814 6.11583L16.2039 7.9964C17.1713 8.53009 17.1713 9.40831 16.2039 9.94538L12.814 11.8226L12.7464 11.8589Z"
+                    fill="url(#paint1_linear_1115_367)" />
+                  <path
+                    d="M12.814 11.8227L9.88743 8.96932L1.25073 17.391C1.57205 17.7203 2.09604 17.76 2.69191 17.4306L12.814 11.8227Z"
+                    fill="url(#paint2_linear_1115_367)" />
+                  <path
+                    d="M12.814 6.11587L2.69191 0.507922C2.09604 0.181967 1.57205 0.221655 1.25073 0.550987L9.88743 8.96924L12.814 6.11587Z"
+                    fill="url(#paint3_linear_1115_367)" />
+                  <defs>
+                    <linearGradient id="paint0_linear_1115_367" x1="9.12509" y1="16.5965" x2="-2.2087" y2="4.97211"
+                      gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#00A0FF" />
+                      <stop offset="0.0066" stop-color="#00A1FF" />
+                      <stop offset="0.2601" stop-color="#00BEFF" />
+                      <stop offset="0.5122" stop-color="#00D2FF" />
+                      <stop offset="0.7604" stop-color="#00DFFF" />
+                      <stop offset="1" stop-color="#00E3FF" />
+                    </linearGradient>
+                    <linearGradient id="paint1_linear_1115_367" x1="17.4636" y1="8.96826" x2="0.698182" y2="8.96826"
+                      gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#FFE000" />
+                      <stop offset="0.4087" stop-color="#FFBD00" />
+                      <stop offset="0.7754" stop-color="#FFA500" />
+                      <stop offset="1" stop-color="#FF9C00" />
+                    </linearGradient>
+                    <linearGradient id="paint2_linear_1115_367" x1="11.2226" y1="7.41818" x2="-4.14694" y2="-8.34545"
+                      gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#FF3A44" />
+                      <stop offset="1" stop-color="#C31162" />
+                    </linearGradient>
+                    <linearGradient id="paint3_linear_1115_367" x1="-0.923305" y1="22.3613" x2="5.93988" y2="15.3222"
+                      gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#32A071" />
+                      <stop offset="0.0685" stop-color="#2DA771" />
+                      <stop offset="0.4762" stop-color="#15CF74" />
+                      <stop offset="0.8009" stop-color="#06E775" />
+                      <stop offset="1" stop-color="#00F076" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+
+                <div class="text-left">
+                  <div class="text-xs sm:text-sm">{{ searchTexts.download }}</div>
+                  <div class="text-sm sm:text-base font-semibold">{{ searchTexts.googlePlay }}</div>
+                </div>
+              </button>
+            </div>
           </div>
-          <img
-            src="assets/aucham-iphone.png"
-            alt="AmCham App"
-            class="w-3/4 sm:w-1/2 lg:w-full h-auto object-contain z-10"
-          />
+
+          <!-- ✅ Colonne image collée en bas -->
+          <div class="hidden xl:block relative flex justify-center items-end order-2 lg:order-2 h-full">
+            <!-- SVG rond derrière l’image -->
+            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none z-0 w-[80%] max-w-[380px]">
+              <svg viewBox="0 0 333 333" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto">
+                <circle cx="166.5" cy="166.5" r="166.5" fill="#F8F9FD" />
+              </svg>
+            </div>
+
+            <!-- ✅ Image collée au bas du conteneur -->
+            <img src="assets/aucham-iphone.png" alt="AmCham App"
+              class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] sm:w-[60%] lg:w-[85%] h-auto object-cover z-10" />
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
-
-
+  </section>
 
   <!-- Section Partenaires -->
   <section class="py-12 sm:py-16 bg-white">
@@ -490,9 +534,9 @@
         <div class="overflow-hidden opacity-70">
           <div class="flex"
             [ngClass]="{'transition-transform duration-500 ease-in-out': !noTransition, 'transition-none': noTransition}"
-            [style.transform]="'translateX(-' + (currentPartnerIndex * (100 / 3)) + '%)'">
+            [style.transform]="'translateX(-' + (currentPartnerIndex * (100 / (isMobile ? 2 : 3))) + '%)'">
             @for (partenaire of displayedPartenaires; track $index) {
-            <div class="flex-shrink-0 w-full sm:w-[33.333%] flex items-center justify-center">
+            <div class="flex-shrink-0 w-1/2 sm:w-[33.333%] flex items-center justify-center">
               <img [src]="'https://wakana.online/repertoire_amchams/'+ partenaire.logo" [alt]="partenaire.name"
                 class="h-12 sm:h-16 w-auto object-contain grayscale-0 transition-all duration-300"
                 (error)="partenaire.logo = '/assets/placeholder-logo.png'">

@@ -207,7 +207,7 @@ export class CompanyService {
       }
 getRatings(companyId: number): Observable<Ratings[]> {
     return this.http.get<Ratings[]>(`${this.baseUrl}/api/ratings/company/${companyId}`,
-    { headers: this.getAuthHeaders() }
+    
     )
       .pipe(
         catchError(this.handleError)
