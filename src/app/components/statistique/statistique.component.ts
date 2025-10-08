@@ -1,10 +1,11 @@
-import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
 import { HeaderMembreComponent } from "../header-membre/header-membre.component";
 import { LanguageService } from '../../../services/language.service';
+import { AuthService } from '../../../services/auth.service';
 import { StatisticsService, VueProfilData, ChronologieStats, VueProfilTotal, ContactRecuStats } from '../../../services/statistics.service';
 import { Subscription } from 'rxjs';
 
@@ -17,14 +18,18 @@ Chart.register(...registerables);
   templateUrl: './statistique.component.html'
 })
 export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
-  private lineChart!: Chart;
-  private pieChart!: Chart;
+  @ViewChild('lineChart') lineChartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('pieChart') pieChartCanvas!: ElementRef<HTMLCanvasElement>;
+
+  private lineChartInstance!: Chart;
+  private pieChartInstance!: Chart;
+
   currentRoute: string;
   private langSubscription!: Subscription;
   currentLang = 'fr';
   
   // Données dynamiques
-  companyId: number = 1; // À remplacer par l'ID réel de l'entreprise connectée
+  companyId: number | null = null;
   vueProfilTotalData: VueProfilTotal | null = null;
   contactRecuData: ContactRecuStats | null = null;
   vueProfilChartData: VueProfilData[] = [];
@@ -32,12 +37,14 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
   lastUpdateDate: string = '';
   isLoading: boolean = true;
   dataLoaded: boolean = false;
+  errorMessage: string = '';
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
     private languageService: LanguageService,
-    private statisticsService: StatisticsService
+    private statisticsService: StatisticsService,
+    private authService: AuthService
   ) {
     this.currentRoute = this.router.url;
   }
@@ -61,7 +68,10 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
       viewsLabel: 'vues',
       contactsLabel: 'contacts',
       loading: 'Chargement...',
-      noData: 'Aucune donnée disponible'
+      noData: 'Aucune donnée disponible',
+      errorLoading: 'Erreur lors du chargement des statistiques',
+      sessionExpired: 'Session expirée. Veuillez vous reconnecter.',
+      noCompany: 'Aucune entreprise associée à votre compte'
     } : {
       pageTitle: 'Your Profile Statistics',
       pageDescription: 'Track your profile performance and visitor engagement.',
@@ -79,7 +89,10 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
       viewsLabel: 'views',
       contactsLabel: 'contacts',
       loading: 'Loading...',
-      noData: 'No data available'
+      noData: 'No data available',
+      errorLoading: 'Error loading statistics',
+      sessionExpired: 'Session expired. Please log in again.',
+      noCompany: 'No company associated with your account'
     };
   }
 
@@ -137,15 +150,82 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
     
     this.currentLang = this.languageService.getCurrentLanguage();
     
-    // Charger les données
-    this.loadAllStatistics();
+    // Charger les données de l'utilisateur et les statistiques
+    this.loadUserAndStatistics();
   }
 
   ngAfterViewInit(): void {
     // Les graphiques seront initialisés après le chargement des données
   }
 
+  /**
+   * Charger les données de l'utilisateur pour récupérer le companyId dynamiquement
+   */
+  private loadUserAndStatistics(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    // Vérifier d'abord l'authentification
+    if (!this.authService.isAuthenticated()) {
+      this.errorMessage = this.texts.sessionExpired;
+      this.isLoading = false;
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    // Récupérer les informations utilisateur depuis l'API
+    this.authService.getCurrentUserFromAPI().subscribe({
+      next: (currentUser) => {
+        console.log('✅ [Statistique] Utilisateur récupéré avec succès:', currentUser);
+        
+        // Vérifier si l'utilisateur a une entreprise associée
+        if (!currentUser.companyId) {
+          this.errorMessage = this.texts.noCompany;
+          this.isLoading = false;
+          return;
+        }
+
+        this.companyId = currentUser.companyId;
+        console.log('🔍 [Statistique] Chargement des statistiques pour companyId:', this.companyId);
+
+        // Charger les statistiques avec le companyId récupéré
+        this.loadAllStatistics();
+      },
+      error: (error) => {
+        console.error('❌ [Statistique] Erreur lors de la récupération des informations utilisateur:', error);
+        
+        // Gestion des erreurs d'authentification
+        if (error.status === 401 || error.status === 403) {
+          this.errorMessage = this.texts.sessionExpired;
+          setTimeout(() => {
+            this.router.navigate(['/login']);
+          }, 2000);
+        } else {
+          this.errorMessage = this.texts.errorLoading;
+        }
+        
+        this.isLoading = false;
+
+        // Fallback sur les données locales en cas d'erreur non-authentification
+        if (error.status !== 401 && error.status !== 403) {
+          const localUser = this.authService.getCurrentUser();
+          if (localUser?.companyId) {
+            console.log('🔄 [Statistique] Tentative avec les données locales...');
+            this.companyId = localUser.companyId;
+            this.loadAllStatistics();
+          }
+        }
+      }
+    });
+  }
+
   private loadAllStatistics(): void {
+    if (!this.companyId) {
+      this.errorMessage = this.texts.noCompany;
+      this.isLoading = false;
+      return;
+    }
+
     this.isLoading = true;
 
     // Charger toutes les statistiques en parallèle
@@ -157,23 +237,29 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
     ]).then(() => {
       this.isLoading = false;
       this.dataLoaded = true;
-      // Attendre que le DOM soit complètement rendu
+      // Attendre que le DOM soit complètement rendu avant d'initialiser les graphiques
       setTimeout(() => {
-        this.initLineChart();
-        this.initPieChart();
-      }, 300);
+        this.initCharts();
+      }, 100);
     }).catch(error => {
       console.error('Erreur lors du chargement des statistiques:', error);
+      this.errorMessage = this.texts.errorLoading;
       this.isLoading = false;
       this.dataLoaded = true;
     });
   }
 
   private loadVueProfilTotal(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((  resolve, reject) => {
+      if (!this.companyId) {
+        reject(new Error('Company ID non disponible'));
+        return;
+      }
+
       this.statisticsService.getVueProfilTotal(this.companyId).subscribe({
         next: (data: any) => {
           this.vueProfilTotalData = data;
+          console.log('✅ [Statistique] Vues profil total chargées:', data);
           resolve();
         },
         error: (error) => {
@@ -186,9 +272,15 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadContactRecu(): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (!this.companyId) {
+        reject(new Error('Company ID non disponible'));
+        return;
+      }
+
       this.statisticsService.getContactRecu(this.companyId).subscribe({
         next: (data) => {
           this.contactRecuData = data;
+          console.log('✅ [Statistique] Contacts reçus chargés:', data);
           resolve();
         },
         error: (error) => {
@@ -201,12 +293,18 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadVueProfil(): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (!this.companyId) {
+        reject(new Error('Company ID non disponible'));
+        return;
+      }
+
       this.statisticsService.getVueProfil(this.companyId).subscribe({
         next: (data) => {
           this.vueProfilChartData = data;
           if (data.length > 0) {
             this.lastUpdateDate = this.formatFullDate(data[data.length - 1].date);
           }
+          console.log('✅ [Statistique] Vues profil chargées:', data);
           resolve();
         },
         error: (error) => {
@@ -219,9 +317,15 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadChronologie(): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (!this.companyId) {
+        reject(new Error('Company ID non disponible'));
+        return;
+      }
+
       this.statisticsService.getChronologie(this.companyId).subscribe({
         next: (data) => {
           this.chronologieData = data;
+          console.log('✅ [Statistique] Chronologie chargée:', data);
           resolve();
         },
         error: (error) => {
@@ -232,66 +336,26 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private formatNumber(num: number): string {
-    if (this.currentLang === 'fr') {
-      return num.toLocaleString('fr-FR');
-    } else {
-      return num.toLocaleString('en-US');
-    }
-  }
-
-  private formatEvolution(evolution: number): string {
-    const sign = evolution >= 0 ? '+' : '';
-    return `${sign}${evolution.toFixed(1)}%`;
-  }
-
-  private formatDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    if (this.currentLang === 'fr') {
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      return `${day}/${month}`;
-    } else {
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
-      return `${month}/${day}`;
-    }
-  }
-
-  private formatFullDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    if (this.currentLang === 'fr') {
-      return date.toLocaleDateString('fr-FR');
-    } else {
-      return date.toLocaleDateString('en-US');
-    }
-  }
-
-  private updateChartsLanguage(): void {
-    if (this.lineChart) {
-      this.lineChart.destroy();
-    }
-    if (this.pieChart) {
-      this.pieChart.destroy();
-    }
-    
-    setTimeout(() => {
-      this.initLineChart();
-      this.initPieChart();
-    }, 100);
+  private initCharts(): void {
+    this.initLineChart();
+    this.initPieChart();
   }
 
   private initLineChart(): void {
-    const canvas = document.getElementById('lineChart') as HTMLCanvasElement;
-    if (!canvas) {
+    if (!this.lineChartCanvas?.nativeElement) {
       console.error('Canvas lineChart non trouvé');
       return;
     }
     
-    const ctx = canvas.getContext('2d');
+    const ctx = this.lineChartCanvas.nativeElement.getContext('2d');
     if (!ctx) {
       console.error('Impossible d\'obtenir le contexte 2D du canvas lineChart');
       return;
+    }
+
+    // Détruire le graphique existant s'il y en a un
+    if (this.lineChartInstance) {
+      this.lineChartInstance.destroy();
     }
 
     const labels = this.vueProfilChartData.map(d => this.formatDate(d.date));
@@ -349,20 +413,24 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     };
 
-    this.lineChart = new Chart(ctx, config);
+    this.lineChartInstance = new Chart(ctx, config);
   }
 
   private initPieChart(): void {
-    const canvas = document.getElementById('pieChart') as HTMLCanvasElement;
-    if (!canvas) {
+    if (!this.pieChartCanvas?.nativeElement) {
       console.error('Canvas pieChart non trouvé');
       return;
     }
     
-    const ctx = canvas.getContext('2d');
+    const ctx = this.pieChartCanvas.nativeElement.getContext('2d');
     if (!ctx) {
       console.error('Impossible d\'obtenir le contexte 2D du canvas pieChart');
       return;
+    }
+
+    // Détruire le graphique existant s'il y en a un
+    if (this.pieChartInstance) {
+      this.pieChartInstance.destroy();
     }
 
     const chronoData = this.donneesChronologie;
@@ -399,15 +467,63 @@ export class StatistiqueComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     };
 
-    this.pieChart = new Chart(ctx, config);
+    this.pieChartInstance = new Chart(ctx, config);
+  }
+
+  private formatNumber(num: number): string {
+    if (this.currentLang === 'fr') {
+      return num.toLocaleString('fr-FR');
+    } else {
+      return num.toLocaleString('en-US');
+    }
+  }
+
+  private formatEvolution(evolution: number): string {
+    const sign = evolution >= 0 ? '+' : '';
+    return `${sign}${evolution.toFixed(1)}%`;
+  }
+
+  private formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    if (this.currentLang === 'fr') {
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      return `${day}/${month}`;
+    } else {
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      return `${month}/${day}`;
+    }
+  }
+
+  private formatFullDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    if (this.currentLang === 'fr') {
+      return date.toLocaleDateString('fr-FR');
+    } else {
+      return date.toLocaleDateString('en-US');
+    }
+  }
+
+  private updateChartsLanguage(): void {
+    if (this.lineChartInstance) {
+      this.lineChartInstance.destroy();
+    }
+    if (this.pieChartInstance) {
+      this.pieChartInstance.destroy();
+    }
+    
+    setTimeout(() => {
+      this.initCharts();
+    }, 100);
   }
 
   ngOnDestroy(): void {
-    if (this.lineChart) {
-      this.lineChart.destroy();
+    if (this.lineChartInstance) {
+      this.lineChartInstance.destroy();
     }
-    if (this.pieChart) {
-      this.pieChart.destroy();
+    if (this.pieChartInstance) {
+      this.pieChartInstance.destroy();
     }
     if (this.langSubscription) {
       this.langSubscription.unsubscribe();
