@@ -1,14 +1,25 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, OnDestroy } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { LanguageService } from '../../../services/language.service';
+import { AuthService } from '../../../services/auth.service';
+import { CompanyService } from '../../../services/company.service';
+import { Subscription } from 'rxjs';
 
 interface Language {
   code: string;
   name: string;
   flag: string;
+}
+
+interface CompanyData {
+  id: number;
+  name: string;
+  sector: string;
+  logo?: string;
+  // Ajoutez d'autres propriétés selon votre modèle de données
 }
 
 @Component({
@@ -18,8 +29,8 @@ interface Language {
   templateUrl: './header-membre.component.html',
   styleUrl: './header-membre.component.css'
 })
-export class HeaderMembreComponent implements OnInit {
-  currentRoute: string = '/apropos'; // Défaut à "A propos"
+export class HeaderMembreComponent implements OnInit, OnDestroy {
+  currentRoute: string = '/apropos';
   
   // Gestion des langues
   showLanguagePopup = false;
@@ -29,15 +40,21 @@ export class HeaderMembreComponent implements OnInit {
   ];
   currentLanguage: Language = this.languages[0];
 
+  // Données de l'entreprise
+  companyData: CompanyData | null = null;
+  isLoading: boolean = true;
+  errorMessage: string = '';
+  private companySubscription!: Subscription;
+
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private languageService: LanguageService
+    private languageService: LanguageService,
+    private authService: AuthService,
+    private companyService: CompanyService
   ) {
-    // Déterminer la route actuelle ou définir par défaut
     this.currentRoute = this.router.url || '/apropos';
     
-    // Si on est sur la route racine, rediriger vers apropos
     if (this.currentRoute === '/' || this.currentRoute === '') {
       this.currentRoute = '/apropos';
     }
@@ -47,12 +64,144 @@ export class HeaderMembreComponent implements OnInit {
     // Initialiser la langue actuelle
     this.initializeLanguage();
 
+    // Charger les données de l'entreprise
+    this.loadCompanyData();
+
     // Écouter les changements de route pour mettre à jour l'état actif
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
       this.updateCurrentRoute(event.urlAfterRedirects);
     });
+  }
+
+  /**
+   * Charger les données de l'entreprise depuis l'API
+   */
+  private loadCompanyData(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    // Vérifier d'abord l'authentification
+    if (!this.authService.isAuthenticated()) {
+      this.errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+      this.isLoading = false;
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    // Récupérer les informations utilisateur depuis l'API
+    this.authService.getCurrentUserFromAPI().subscribe({
+      next: (currentUser) => {
+        console.log('✅ [Header] Utilisateur récupéré avec succès:', currentUser);
+        
+        // Vérifier si l'utilisateur a une entreprise associée
+        if (!currentUser.companyId) {
+          this.errorMessage = 'Aucune entreprise associée à votre compte';
+          this.isLoading = false;
+          return;
+        }
+
+        // Charger les données de l'entreprise avec le companyId récupéré
+        this.companySubscription = this.companyService.getCompanyById(currentUser.companyId).subscribe({
+          next: (company) => {
+            console.log('✅ [Header] Données entreprise chargées:', company);
+            this.companyData = company;
+            this.isLoading = false;
+          },
+          error: (error) => {
+            console.error('❌ [Header] Erreur lors du chargement de l\'entreprise:', error);
+            this.errorMessage = 'Erreur lors du chargement des données de l\'entreprise';
+            this.isLoading = false;
+            
+            // En cas d'erreur, utiliser des données par défaut
+            // this.setDefaultCompanyData();
+          }
+        });
+      },
+      error: (error) => {
+        console.error('❌ [Header] Erreur lors de la récupération des informations utilisateur:', error);
+        
+        // Gestion des erreurs d'authentification
+        if (error.status === 401 || error.status === 403) {
+          this.errorMessage = 'Session expirée. Redirection vers la page de connexion...';
+          setTimeout(() => {
+            this.router.navigate(['/login']);
+          }, 2000);
+        } else {
+          this.errorMessage = 'Erreur lors de la récupération de vos informations utilisateur';
+        }
+        
+        this.isLoading = false;
+        
+        // En cas d'erreur non-authentification, essayer de fallback sur les données locales
+        if (error.status !== 401 && error.status !== 403) {
+          const localUser = this.authService.getCurrentUser();
+          if (localUser?.companyId) {
+            console.log('Tentative avec les données locales...');
+            this.loadCompanyFromLocalUser(localUser.companyId);
+          } else {
+            // this.setDefaultCompanyData();
+
+
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Charger les données de l'entreprise à partir de l'ID utilisateur local
+   */
+  private loadCompanyFromLocalUser(companyId: number): void {
+    this.companySubscription = this.companyService.getCompanyById(companyId).subscribe({
+      next: (company) => {
+        this.companyData = company;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Erreur avec les données locales:', error);
+        // this.setDefaultCompanyData();
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Définir des données d'entreprise par défaut en cas d'erreur
+   */
+  // private setDefaultCompanyData(): void {
+  //   this.companyData = {
+  //     id: 0,
+  //     name: 'Global Tech Solutions',
+  //     sector: 'Technologie',
+  //     logo: '../assets/logoW.png'
+  //   };
+  // }
+
+  /**
+   * Obtenir l'URL du logo de l'entreprise
+   */
+  get companyLogo(): string {
+    if (this.companyData?.logo) {
+      return this.companyData.logo;
+    }
+    // Logo par défaut si non disponible
+    return '../assets/logoAmcham.png';
+  }
+
+  /**
+   * Obtenir le nom de l'entreprise
+   */
+  get companyName(): string {
+    return this.companyData?.name || 'Global Tech Solutions';
+  }
+
+  /**
+   * Obtenir le secteur d'activité
+   */
+  get companySector(): string {
+    return this.companyData?.sector || 'Technologie';
   }
 
   private initializeLanguage(): void {
@@ -73,7 +222,6 @@ export class HeaderMembreComponent implements OnInit {
   private updateCurrentRoute(url: string): void {
     let newRoute = url;
     
-    // Si on est sur la route racine, considérer que c'est apropos
     if (newRoute === '/' || newRoute === '') {
       newRoute = '/apropos';
     }
@@ -135,9 +283,6 @@ export class HeaderMembreComponent implements OnInit {
       // Changer la langue dans le service
       this.languageService.setLanguage(languageCode.toLowerCase());
       console.log(`Langue changée vers: ${selectedLanguage.name}`);
-
-      // Ici vous pouvez ajouter d'autres actions comme recharger les traductions
-      // this.reloadTranslations();
     } else {
       this.showLanguagePopup = false;
     }
@@ -171,12 +316,15 @@ export class HeaderMembreComponent implements OnInit {
     return isActive;
   }
 
-  // Méthode utilitaire pour recharger les traductions (à adapter selon votre implémentation)
-  private reloadTranslations(): void {
-    // Implémentez cette méthode selon votre système de traduction
-    // Exemple avec ngx-translate :
-    // this.translate.use(this.currentLanguage.code.toLowerCase()).subscribe(() => {
-    //   console.log('Traductions rechargées');
-    // });
+  // Méthode pour rafraîchir les données de l'entreprise
+  refreshCompanyData(): void {
+    this.loadCompanyData();
+  }
+
+  ngOnDestroy(): void {
+    // Nettoyer les abonnements
+    if (this.companySubscription) {
+      this.companySubscription.unsubscribe();
+    }
   }
 }

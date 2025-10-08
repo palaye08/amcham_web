@@ -140,16 +140,23 @@
           </nav>
         </div>
         
-        <!-- Company info in header -->
-        <div class="flex items-center relative left-[14%] ">
-          <div class="w-10 h-10 bg-blue-900 rounded-full flex items-center justify-center mr-3">
-            <img class="h-10 w-10 rounded-[50%] " src="../assets/logoW.png" alt="">
-          </div>
-          <div>
-            <h2 class="font-semibold text-gray-900">Global Tech Solutions</h2>
-            <p class="text-sm text-gray-500">Technologie</p>
-          </div>
-        </div>
+            <!-- Company info in header -->
+<div class="flex items-center relative left-[14%]">
+  <div class="w-10 h-10 bg-blue-900 rounded-full flex items-center justify-center mr-3">
+    <!-- Logo dynamique de l'entreprise -->
+    <img 
+      class="h-10 w-10 rounded-[50%]" 
+      [src]=" 'https://wakana.online/repertoire_amchams/' + companyLogo" 
+      [alt]="companyName + ' logo'"
+    >
+  </div>
+  <div>
+    <!-- Nom dynamique de l'entreprise -->
+    <h2 class="font-semibold text-gray-900">{{ companyName }}</h2>
+    <!-- Secteur d'activité dynamique -->
+    <p class="text-sm text-gray-500">{{ companySector }}</p>
+  </div>
+</div>
       </div>
     </div>
   </div>

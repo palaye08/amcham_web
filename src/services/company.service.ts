@@ -20,6 +20,8 @@ export interface Company {
   webLink: string;
   logo: string;
   pictures: string[];
+  updatedAt: string | null;
+
   lat: number;
   lon: number;
 }
