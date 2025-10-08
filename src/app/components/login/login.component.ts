@@ -69,7 +69,9 @@ export class LoginComponent {
       this.loginForm.markAllAsTouched();
     }
   }
-
+navigateToHome (){
+ this.router.navigate(['/'])
+}
   private handleSuccessfulLogin(user: any) {
     console.log('Connexion réussie:', user);
     console.log('Connexion réussie:', user);

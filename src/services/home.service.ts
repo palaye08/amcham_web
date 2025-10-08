@@ -217,6 +217,7 @@ export class HomeService {
         catchError(this.handleError)
       );
   }
+  
 
   /**
    * Obtenir les statistiques des entreprises - GET /api/companies/total/kpi

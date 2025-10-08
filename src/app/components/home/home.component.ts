@@ -52,7 +52,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   isAdsLoading = false;
   isMobile: boolean = false;
 
-
   displayedPartenaires: Partenaire[] = [];
   currentPartnerIndex: number = 0;
   noTransition: boolean = false;
@@ -89,6 +88,9 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   partenaires: Partenaire[] = [];
 
+  // ✅ NOUVELLE PROPRIÉTÉ - Pour gérer l'état "Lire plus"
+  expandedAnnonces: Set<number> = new Set();
+
   // Slides statiques de fallback (en français)
   private heroSlidesFr = [
     {
@@ -124,13 +126,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       link: ''
     }
   ];
-
-  getMemberImageUrl(pictures: string | undefined): string {
-    if (pictures && pictures.length > 0) {
-      return this.homeService.getMemberImageUrl(pictures);
-    }
-    return 'assets/default-member.png';
-  }
 
   // Slides statiques de fallback (en anglais)
   private heroSlidesEn = [
@@ -281,7 +276,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.isMobile = window.innerWidth < 640;
     });
 
-
     this.loadAds();
     this.loadHomeData();
     this.loadCountriesAndSectors();
@@ -299,8 +293,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       clearInterval(this.partnerInterval);
     }
     window.removeEventListener('resize', () => {
-    this.isMobile = window.innerWidth < 640;
-  });
+      this.isMobile = window.innerWidth < 640;
+    });
   }
 
   loadAds(): void {
@@ -325,6 +319,13 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.startSlideShow();
       }
     });
+  }
+
+  getMemberImageUrl(pictures: string | undefined): string {
+    if (pictures && pictures.length > 0) {
+      return this.homeService.getMemberImageUrl(pictures);
+    }
+    return 'assets/default-member.png';
   }
 
   contactMembre(membre: MembreDisplay): void {
@@ -364,7 +365,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       window.open(currentAd.link, '_blank');
     }
   }
-
 
   getLogoUrl(logoPath: string): string {
     return this.partenaireService.getLogoUrl(logoPath);
@@ -741,5 +741,41 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   voirToutesActualites() {
     this.router.navigate(['/actualites']);
+  }
+
+  // ✅ NOUVELLES MÉTHODES POUR LA FONCTIONNALITÉ "LIRE PLUS"
+
+  /**
+   * Basculer l'état "Lire plus" pour une annonce
+   */
+  toggleDescription(annonceId: number): void {
+    if (this.expandedAnnonces.has(annonceId)) {
+      this.expandedAnnonces.delete(annonceId);
+    } else {
+      this.expandedAnnonces.add(annonceId);
+    }
+  }
+
+  /**
+   * Vérifier si une annonce est expanded
+   */
+  isExpanded(annonceId: number): boolean {
+    return this.expandedAnnonces.has(annonceId);
+  }
+
+  /**
+   * Vérifier si la description est trop longue (plus de 100 caractères)
+   */
+  isDescriptionLong(description: string): boolean {
+    return !!description && description.length > 100;
+
+  }
+
+  /**
+   * Obtenir la description tronquée
+   */
+  getTruncatedDescription(description: string): string {
+    if (!description) return '';
+    return description.length > 100 ? description.substring(0, 100) + '...' : description;
   }
 }
