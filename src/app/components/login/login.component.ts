@@ -72,6 +72,7 @@ export class LoginComponent {
 
   private handleSuccessfulLogin(user: any) {
     console.log('Connexion réussie:', user);
+    console.log('Connexion réussie:', user);
     
     // Redirection basée sur le profil
     if (user.profil === 'ADMIN_AMCHAM') {
